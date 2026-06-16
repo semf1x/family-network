@@ -46,6 +46,8 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
             status_code=400,
             detail="Username: 4-20 символов, только строчные буквы, цифры и _, начинается с буквы"
         )
+    if len(data.password.encode("utf-8")) > 72:
+        raise HTTPException(status_code=400, detail="Пароль не должен превышать 72 символа")
 
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
