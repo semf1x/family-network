@@ -1,0 +1,33 @@
+# Секреты — никогда не коммитим
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Система
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Claude Code
+.claude/
+
+# Загруженные файлы (хранятся на сервере)
+backend/uploads/
