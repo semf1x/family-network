@@ -47,7 +47,7 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: http://${SERVER_IP}:8000
+        NEXT_PUBLIC_API_URL: https://api.kofkaweb.ru
     restart: always
     ports:
       - "3000:3000"
