@@ -83,10 +83,59 @@ export const api = {
 
   getMessages: (userId: number) => request(`/messages/${userId}`),
 
-  sendMessage: (userId: number, text: string) =>
-    request(`/messages/${userId}`, { method: "POST", body: JSON.stringify({ text }) }),
+  sendMessage: (userId: number, text: string, replyToId?: number) =>
+    request(`/messages/${userId}`, { method: "POST", body: JSON.stringify({ text, reply_to_id: replyToId }) }),
 
-  sendFile: (userId: number, file: File) => upload(`/messages/${userId}/file`, file),
+  sendFile: async (userId: number, file: File, replyToId?: number) => {
+    const token = getToken()
+    const form = new FormData()
+    form.append("file", file)
+    if (replyToId) form.append("reply_to_id", String(replyToId))
+    const res = await fetch(`${BASE_URL}/messages/${userId}/file`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ detail: "Unknown error" }))
+      throw new Error(error.detail || "Upload failed")
+    }
+    return res.json()
+  },
+
+  markAsRead: (userId: number) =>
+    request(`/messages/${userId}/read`, { method: "POST" }),
+
+  getCallHistory: () => request("/calls/"),
+
+  logCall: (data: { receiver_id: number; status: string; duration?: number }) =>
+    request("/calls/", { method: "POST", body: JSON.stringify(data) }),
+
+  getUserPosts: (userId: number) => request(`/posts/user/${userId}`),
+
+  createPost: async (data: { title?: string; text?: string; image?: File | null }) => {
+    const token = getToken()
+    const form = new FormData()
+    if (data.title) form.append("title", data.title)
+    if (data.text) form.append("text", data.text)
+    if (data.image) form.append("image", data.image)
+    const res = await fetch(`${BASE_URL}/posts/`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ detail: "Unknown error" }))
+      throw new Error(error.detail || "Failed")
+    }
+    return res.json()
+  },
+
+  deletePost: (postId: number) =>
+    request(`/posts/${postId}`, { method: "DELETE" }),
+
+  toggleBadge: (userId: number) =>
+    request(`/users/${userId}/badge`, { method: "POST" }),
 }
 
 export function createWebSocket(token: string, onMessage: (data: any) => void) {

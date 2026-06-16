@@ -204,6 +204,7 @@ async def get_public_profile(
         phone=user.phone if (user.show_phone and user.phone_verified) else None,
         phone_verified=user.phone_verified,
         is_verified=user.is_verified,
+        badge_verified=user.badge_verified,
         created_at=user.created_at,
     )
     return public
@@ -227,6 +228,23 @@ async def search_users(
         .limit(20)
     )
     return result.scalars().all()
+
+
+@router.post("/{user_id}/badge")
+async def toggle_badge(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if current_user.id != 1:
+        raise HTTPException(status_code=403, detail="Нет прав")
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    target.badge_verified = not target.badge_verified
+    await db.commit()
+    return {"badge_verified": target.badge_verified, "username": target.username}
 
 
 @router.get("/{user_id}", response_model=UserOut)

@@ -4,11 +4,14 @@ import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import Link from "next/link"
-import { MessageCircle, User, Settings, LogOut, Sun, Moon } from "lucide-react"
+import { MessageCircle, User, Settings, LogOut, Sun, Moon, Phone } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { connectWS } from "@/lib/ws"
+import CallModal from "@/components/CallModal"
 
 const nav = [
   { href: "/chats", icon: MessageCircle, label: "Чаты" },
+  { href: "/calls", icon: Phone, label: "Звонки" },
   { href: "/profile", icon: User, label: "Профиль" },
   { href: "/settings", icon: Settings, label: "Настройки" },
 ]
@@ -42,6 +45,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
     setUser(JSON.parse(stored))
 
+    const token = localStorage.getItem("token")
+    if (token) connectWS(token)
+
     const onUpdate = (e: Event) => setUser((e as CustomEvent).detail)
     window.addEventListener("user-updated", onUpdate)
     return () => window.removeEventListener("user-updated", onUpdate)
@@ -53,6 +59,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) return null
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
   return (
     <div className="flex h-screen bg-background">
@@ -83,7 +91,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="p-4 border-t flex items-center gap-3">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user.avatar_url ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${user.avatar_url}` : undefined} />
+            <AvatarImage src={user.avatar_url ? `${apiUrl}${user.avatar_url}` : undefined} />
             <AvatarFallback>{(user.display_name || user.username)?.[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -105,7 +113,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user.avatar_url ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${user.avatar_url}` : undefined} />
+              <AvatarImage src={user.avatar_url ? `${apiUrl}${user.avatar_url}` : undefined} />
               <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
             </Avatar>
             <button onClick={logout} className="text-muted-foreground hover:text-destructive transition-colors">
@@ -136,6 +144,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </div>
+
+      {/* Глобальная модалка звонков */}
+      <CallModal />
     </div>
   )
 }

@@ -18,6 +18,7 @@ class User(Base):
     phone_verified = Column(Boolean, default=False, nullable=False)
     show_phone = Column(Boolean, default=False, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
+    badge_verified = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     posts = relationship("Post", back_populates="author", cascade="all, delete")
@@ -29,6 +30,7 @@ class Post(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(200), nullable=True)
     text = Column(Text, nullable=True)
     image_url = Column(String(500), nullable=True)
     repost_of = Column(Integer, ForeignKey("posts.id", ondelete="SET NULL"), nullable=True)
@@ -64,9 +66,24 @@ class Message(Base):
     to_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     text = Column(Text, nullable=True)
     file_url = Column(String(500), nullable=True)
-    file_type = Column(String(50), nullable=True)   # 'image' | 'file'
+    file_type = Column(String(50), nullable=True)   # 'image' | 'audio' | 'file'
     file_name = Column(String(255), nullable=True)
+    reply_to_id = Column(Integer, ForeignKey("messages.id", ondelete="SET NULL"), nullable=True)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     sender = relationship("User", foreign_keys=[from_id], back_populates="sent_messages")
+
+
+class Call(Base):
+    __tablename__ = "calls"
+
+    id = Column(Integer, primary_key=True)
+    caller_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    receiver_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(20), default="missed")   # missed | completed | declined
+    duration = Column(Integer, default=0)            # секунды
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    caller = relationship("User", foreign_keys=[caller_id])
+    receiver = relationship("User", foreign_keys=[receiver_id])

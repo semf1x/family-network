@@ -35,6 +35,7 @@ class UserOut(BaseModel):
     phone_verified: bool
     show_phone: bool
     is_verified: bool
+    badge_verified: bool
     created_at: datetime
 
     class Config:
@@ -50,6 +51,7 @@ class UserPublicOut(BaseModel):
     phone: Optional[str]   # None если show_phone=False
     phone_verified: bool
     is_verified: bool
+    badge_verified: bool
     created_at: datetime
 
     class Config:
