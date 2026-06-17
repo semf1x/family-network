@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -4 96 120" fill="none">
+  <!-- Tail: rises from left, hooks right at top -->
+  <path d="M 26 52 C 14 36 8 14 22 6 C 30 0 42 6 38 20"
+        stroke="#7730C7" stroke-width="5.5" stroke-linecap="round"/>
+  <!-- Body -->
+  <ellipse cx="50" cy="67" rx="26" ry="28" stroke="#7730C7" stroke-width="5.5"/>
+  <!-- Right ear -->
+  <path d="M 66 42 L 78 26 L 84 44"
+        stroke="#7730C7" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Left leg -->
+  <path d="M 30 88 C 26 97 24 106 30 108 C 36 110 40 103 37 93"
+        stroke="#7730C7" stroke-width="5" stroke-linecap="round"/>
+  <!-- Right leg -->
+  <path d="M 70 88 C 74 97 76 106 70 108 C 64 110 60 103 63 93"
+        stroke="#7730C7" stroke-width="5" stroke-linecap="round"/>
+  <!-- Belly dot -->
+  <circle cx="50" cy="79" r="3" fill="#7730C7"/>
+  <!-- Speech bubble -->
+  <rect x="47" y="55" width="27" height="18" rx="5"
+        fill="white" stroke="#7730C7" stroke-width="2.5"/>
+  <!-- Bubble pointer -->
+  <path d="M 51 73 L 46 81 L 57 76"
+        fill="white" stroke="#7730C7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Dots -->
+  <circle cx="53" cy="64" r="2.2" fill="#7730C7"/>
+  <circle cx="60" cy="64" r="2.2" fill="#7730C7"/>
+  <circle cx="67" cy="64" r="2.2" fill="#7730C7"/>
+</svg>

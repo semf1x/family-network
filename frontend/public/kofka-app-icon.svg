@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" fill="#7730C7"/>
+  <g transform="translate(30, 16) scale(1.45)" fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Tail -->
+    <path d="M 26 52 C 14 36 8 14 22 6 C 30 0 42 6 38 20" stroke-width="5.5"/>
+    <!-- Body -->
+    <ellipse cx="50" cy="67" rx="26" ry="28" stroke-width="5.5"/>
+    <!-- Right ear -->
+    <path d="M 66 42 L 78 26 L 84 44" stroke-width="5"/>
+    <!-- Left leg -->
+    <path d="M 30 88 C 26 97 24 106 30 108 C 36 110 40 103 37 93" stroke-width="5"/>
+    <!-- Right leg -->
+    <path d="M 70 88 C 74 97 76 106 70 108 C 64 110 60 103 63 93" stroke-width="5"/>
+    <!-- Belly dot -->
+    <circle cx="50" cy="79" r="3" fill="white" stroke="none"/>
+    <!-- Speech bubble -->
+    <rect x="47" y="55" width="27" height="18" rx="5" fill="#7730C7" stroke="white" stroke-width="2.5"/>
+    <!-- Bubble pointer -->
+    <path d="M 51 73 L 46 81 L 57 76" fill="#7730C7" stroke="white" stroke-width="2"/>
+    <!-- Dots -->
+    <circle cx="53" cy="64" r="2.2" fill="white" stroke="none"/>
+    <circle cx="60" cy="64" r="2.2" fill="white" stroke="none"/>
+    <circle cx="67" cy="64" r="2.2" fill="white" stroke="none"/>
+  </g>
+</svg>

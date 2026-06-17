@@ -160,9 +160,12 @@ export default function AuthPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold tracking-tight">Семейная сеть</h1>
-            <p className="text-muted-foreground mt-2">Только для своих</p>
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <img src="/kofka-icon.svg" alt="Kofka" className="h-16 w-auto" />
+            <div className="text-left">
+              <h1 className="text-4xl font-bold text-primary tracking-tight leading-none">Kofka</h1>
+              <p className="text-sm text-muted-foreground tracking-[0.15em] uppercase mt-1">Social Network</p>
+            </div>
           </div>
 
           <Card>
@@ -228,9 +231,12 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold tracking-tight">Семейная сеть</h1>
-          <p className="text-muted-foreground mt-2">Только для своих</p>
+        <div className="flex items-center justify-center gap-4 mb-8">
+          <img src="/kofka-icon.svg" alt="Kofka" className="h-16 w-auto" />
+          <div className="text-left">
+            <h1 className="text-4xl font-bold text-primary tracking-tight leading-none">Kofka</h1>
+            <p className="text-sm text-muted-foreground tracking-[0.15em] uppercase mt-1">Social Network</p>
+          </div>
         </div>
 
         <Tabs defaultValue="login" onValueChange={() => setError("")}>
@@ -282,7 +288,7 @@ export default function AuthPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Создать аккаунт</CardTitle>
-                <CardDescription>Присоединитесь к семейной сети</CardDescription>
+                <CardDescription>Присоединитесь к Kofka</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleRegister} className="space-y-4">

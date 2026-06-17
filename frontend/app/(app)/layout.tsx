@@ -125,9 +125,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar — десктоп */}
       <aside className="hidden md:flex w-64 border-r flex-col shrink-0">
-        <div className="p-6 border-b">
-          <h1 className="text-xl font-bold">Семейная сеть</h1>
-          <p className="text-xs text-muted-foreground mt-1">Только для своих</p>
+        <div className="p-5 border-b flex items-center gap-3">
+          <img src="/kofka-icon.svg" alt="Kofka" className="h-10 w-auto" />
+          <div>
+            <h1 className="text-lg font-bold text-primary leading-tight">Kofka</h1>
+            <p className="text-[10px] text-muted-foreground tracking-wider uppercase">Social Network</p>
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -174,7 +177,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Мобильный хедер */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 border-b">
-          <h1 className="text-lg font-bold">Семейная сеть</h1>
+          <div className="flex items-center gap-2">
+              <img src="/kofka-icon.svg" alt="Kofka" className="h-7 w-auto" />
+              <span className="text-lg font-bold text-primary">Kofka</span>
+            </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Avatar className="h-8 w-8">
