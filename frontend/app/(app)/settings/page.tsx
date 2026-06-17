@@ -70,13 +70,17 @@ export default function SettingsPage() {
   const [cacheCleared, setCacheCleared] = useState(false)
 
   useEffect(() => {
-    api.me().then((data) => {
+    const applyUser = (data: any) => {
       setUser(data)
       setDisplayName(data.display_name || "")
       setUsername(data.username)
       setBio(data.bio || "")
       setPhone(data.phone || "")
       setShowPhone(data.show_phone ?? false)
+    }
+    api.me().then(applyUser).catch(() => {
+      const stored = localStorage.getItem("user")
+      if (stored) applyUser(JSON.parse(stored))
     })
     const s = loadAppSettings()
     setNotifEnabled(s.notifications ?? false)

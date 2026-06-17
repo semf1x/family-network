@@ -29,6 +29,13 @@ export default function ProfilePage() {
       setUser(data)
       localStorage.setItem("user", JSON.stringify(data))
       api.getUserPosts(data.id).then(setPosts)
+    }).catch(() => {
+      const stored = localStorage.getItem("user")
+      if (stored) {
+        const data = JSON.parse(stored)
+        setUser(data)
+        api.getUserPosts(data.id).then(setPosts).catch(() => {})
+      }
     })
   }, [])
 
