@@ -203,7 +203,7 @@ async def send_message(
         subs = subs_r.scalars().all()
         if subs:
             name = current_user.display_name or current_user.username
-            await send_push(subs, "Семейная сеть", f"{name}: {data.text or '📎 Вложение'}")
+            await send_push(subs, "Kofka", f"{name}: {data.text or '📎 Вложение'}")
 
     return serialize_msg(msg, current_user.id, reply_msg)
 
@@ -255,7 +255,7 @@ async def send_file_message(
         if subs:
             name = current_user.display_name or current_user.username
             body = "🎤 Голосовое" if file_type == "audio" else "🖼 Фото" if file_type == "image" else "📎 Файл"
-            await send_push(subs, "Семейная сеть", f"{name}: {body}")
+            await send_push(subs, "Kofka", f"{name}: {body}")
 
     return serialize_msg(msg, current_user.id, reply_msg)
 

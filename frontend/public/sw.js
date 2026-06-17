@@ -2,8 +2,10 @@ self.addEventListener('push', function (event) {
   if (!event.data) return
   const data = event.data.json()
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Семейная сеть', {
+    self.registration.showNotification(data.title || 'Kofka', {
       body: data.body || 'Новое сообщение',
+      icon: '/kofka-app-icon.svg',
+      badge: '/kofka-icon.svg',
       data: { url: data.url || '/chats' },
       vibrate: [200, 100, 200],
     })
