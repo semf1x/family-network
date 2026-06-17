@@ -216,15 +216,15 @@ async def search_users(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    q = q.strip()
+    if not q:
+        return []
+    search_conditions = [User.username == q]
+    if len(q) >= 3:
+        search_conditions.append(User.display_name.ilike(f"%{q}%"))
     result = await db.execute(
         select(User)
-        .where(
-            User.id != current_user.id,
-            or_(
-                User.username.ilike(f"%{q}%"),
-                User.display_name.ilike(f"%{q}%"),
-            )
-        )
+        .where(User.id != current_user.id, or_(*search_conditions))
         .limit(20)
     )
     return result.scalars().all()

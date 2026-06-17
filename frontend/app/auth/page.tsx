@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,10 @@ type Screen = "auth" | "verify"
 export default function AuthPage() {
   const router = useRouter()
   const [screen, setScreen] = useState<Screen>("auth")
+
+  useEffect(() => {
+    if (localStorage.getItem("token")) router.replace("/chats")
+  }, [router])
   const [pendingEmail, setPendingEmail] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
