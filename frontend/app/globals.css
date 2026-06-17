@@ -131,6 +131,11 @@
   }
 }
 
+/* Kofka brand font */
+.font-kofka {
+  font-family: var(--font-kofka), sans-serif;
+}
+
 /* Prevent iOS Safari zoom on input focus */
 @media screen and (max-width: 768px) {
   input, textarea, select {

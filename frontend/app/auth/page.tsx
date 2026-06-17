@@ -163,7 +163,7 @@ export default function AuthPage() {
           <div className="flex items-center justify-center gap-4 mb-8">
             <img src="/kofka-icon.svg" alt="Kofka" className="h-16 w-auto" />
             <div className="text-left">
-              <h1 className="text-4xl font-bold text-primary tracking-tight leading-none">Kofka</h1>
+              <h1 className="font-kofka text-4xl font-bold text-primary tracking-tight leading-none">Kofka</h1>
               <p className="text-sm text-muted-foreground tracking-[0.15em] uppercase mt-1">Social Network</p>
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function AuthPage() {
         <div className="flex items-center justify-center gap-4 mb-8">
           <img src="/kofka-icon.svg" alt="Kofka" className="h-16 w-auto" />
           <div className="text-left">
-            <h1 className="text-4xl font-bold text-primary tracking-tight leading-none">Kofka</h1>
+            <h1 className="font-kofka text-4xl font-bold text-primary tracking-tight leading-none">Kofka</h1>
             <p className="text-sm text-muted-foreground tracking-[0.15em] uppercase mt-1">Social Network</p>
           </div>
         </div>

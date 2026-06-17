@@ -128,7 +128,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-5 border-b flex items-center gap-3">
           <img src="/kofka-icon.svg" alt="Kofka" className="h-10 w-auto" />
           <div>
-            <h1 className="text-lg font-bold text-primary leading-tight">Kofka</h1>
+            <h1 className="font-kofka text-lg font-bold text-primary leading-tight">Kofka</h1>
             <p className="text-[10px] text-muted-foreground tracking-wider uppercase">Social Network</p>
           </div>
         </div>
@@ -147,7 +147,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="relative">
                 <Icon size={18} />
                 {href === "/chats" && totalUnread > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                  <span className={`absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 text-[10px] font-bold rounded-full flex items-center justify-center
+                    ${pathname === href
+                      ? "border border-white text-white"
+                      : "bg-primary text-primary-foreground"
+                    }`}>
                     {totalUnread > 9 ? "9+" : totalUnread}
                   </span>
                 )}
@@ -179,7 +183,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="md:hidden flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-2">
               <img src="/kofka-icon.svg" alt="Kofka" className="h-7 w-auto" />
-              <span className="text-lg font-bold text-primary">Kofka</span>
+              <span className="font-kofka text-lg font-bold text-primary">Kofka</span>
             </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />

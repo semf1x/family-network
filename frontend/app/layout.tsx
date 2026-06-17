@@ -1,11 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Lexend_Exa } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin", "cyrillic"],
+});
+
+const lexendExa = Lexend_Exa({
+  variable: "--font-kofka",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -40,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${inter.variable} h-full antialiased`}
+      className={`${inter.variable} ${lexendExa.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
