@@ -71,12 +71,25 @@ function generateWaveform(seed: string, count = 44): number[] {
   })
 }
 
-function AudioPlayer({ url }: { url: string }) {
+function AudioPlayer({ url, isMine }: { url: string; isMine?: boolean }) {
   const [playing, setPlaying] = useState(false)
   const [duration, setDuration] = useState(0)
   const [current, setCurrent] = useState(0)
   const ref = useRef<HTMLAudioElement>(null)
   const bars = useMemo(() => generateWaveform(url, 32), [url])
+
+  // Stop this player when another audio starts
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const otherUrl = (e as CustomEvent).detail
+      if (otherUrl !== url && ref.current) {
+        ref.current.pause()
+        setPlaying(false)
+      }
+    }
+    window.addEventListener("audio-play-start", handler)
+    return () => window.removeEventListener("audio-play-start", handler)
+  }, [url])
 
   function seek(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -86,6 +99,24 @@ function AudioPlayer({ url }: { url: string }) {
     setCurrent(t)
   }
 
+  function togglePlay() {
+    if (!ref.current) return
+    if (playing) {
+      ref.current.pause()
+      setPlaying(false)
+    } else {
+      window.dispatchEvent(new CustomEvent("audio-play-start", { detail: url }))
+      ref.current.play()
+      setPlaying(true)
+    }
+  }
+
+  const filledColor = isMine ? "rgba(255,255,255,0.95)" : "rgba(96,35,191,0.85)"
+  const emptyColor = isMine ? "rgba(255,255,255,0.32)" : "rgba(96,35,191,0.22)"
+  const btnClass = isMine ? "bg-white/20 hover:bg-white/30" : "bg-primary/15 hover:bg-primary/25"
+  const iconClass = isMine ? "text-white" : "text-primary"
+  const timeClass = isMine ? "text-white opacity-60" : "text-foreground opacity-50"
+
   return (
     <div className="flex items-center gap-2.5 w-full min-w-0">
       <audio ref={ref} src={url}
@@ -94,18 +125,13 @@ function AudioPlayer({ url }: { url: string }) {
         onEnded={() => { setPlaying(false); setCurrent(0) }}
       />
       <button
-        onClick={() => {
-          if (!ref.current) return
-          if (playing) ref.current.pause(); else ref.current.play()
-          setPlaying(!playing)
-        }}
-        className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+        onClick={togglePlay}
+        className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${btnClass}`}
       >
-        {playing ? <Pause size={14} /> : <Play size={14} />}
+        {playing ? <Pause size={14} className={iconClass} /> : <Play size={14} className={iconClass} />}
       </button>
 
-      <div className="flex-1 flex flex-col gap-1">
-        {/* Вейвформа */}
+      <div className="flex-1 min-w-0 flex flex-col gap-1">
         <div
           className="flex items-center gap-[2px] h-9 cursor-pointer overflow-hidden"
           onClick={seek}
@@ -119,13 +145,13 @@ function AudioPlayer({ url }: { url: string }) {
                 className="w-[3px] rounded-full transition-colors duration-75 flex-shrink-0"
                 style={{
                   height: `${Math.round(h * 100)}%`,
-                  backgroundColor: filled ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.32)",
+                  backgroundColor: filled ? filledColor : emptyColor,
                 }}
               />
             )
           })}
         </div>
-        <span className="text-xs opacity-60">
+        <span className={`text-xs ${timeClass}`}>
           {fmtDuration(current > 0 || playing ? current : duration)}
         </span>
       </div>
@@ -495,7 +521,7 @@ function ChatsPage() {
                       </button>
 
                       {/* Пузырь */}
-                      <div className={`flex flex-col max-w-xs ${msg.is_mine ? "items-end" : "items-start"}`}>
+                      <div className={`flex flex-col max-w-[80%] md:max-w-xs ${msg.is_mine ? "items-end" : "items-start"}`}>
                         {/* Цитата (ответ на сообщение) */}
                         {msg.reply_to && (
                           <div
@@ -519,8 +545,8 @@ function ChatsPage() {
                         ) : msg.file_type === "audio" ? (
                           <div className={`px-3 py-2.5 rounded-2xl ${msg.is_mine
                             ? "bg-primary text-primary-foreground rounded-br-sm"
-                            : "bg-muted rounded-bl-sm"}`}>
-                            <AudioPlayer url={`${BASE}${msg.file_url}`} />
+                            : "bg-accent border border-primary/20 rounded-bl-sm"}`}>
+                            <AudioPlayer url={`${BASE}${msg.file_url}`} isMine={msg.is_mine} />
                           </div>
                         ) : msg.file_type === "file" ? (
                           <a href={`${BASE}${msg.file_url}`} download={msg.file_name} target="_blank" rel="noreferrer"
@@ -540,12 +566,12 @@ function ChatsPage() {
 
                         {/* Время + статус */}
                         {isLast && (
-                          <div className={`flex items-center gap-1 mt-1 ${msg.is_mine ? "self-end" : "self-start"}`}>
+                          <div className={`flex items-center gap-1 mt-1 ${msg.is_mine ? "self-end pr-0.5" : "self-start pl-0.5"}`}>
                             <span className="text-xs text-muted-foreground">{fmtTime(msg.created_at)}</span>
                             {msg.is_mine && (
                               msg.is_read
-                                ? <CheckCheck size={13} className="text-primary" />
-                                : <Check size={13} className="text-muted-foreground" />
+                                ? <CheckCheck size={14} className="text-primary shrink-0" />
+                                : <Check size={14} className="text-muted-foreground shrink-0" />
                             )}
                           </div>
                         )}
