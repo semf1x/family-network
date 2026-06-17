@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, UploadFi
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_, update, func
 from database import get_db
-from models import Message, User
+from models import Message, User, PushSubscription
 from routers.auth import get_current_user, decode_token
+from push_service import send_push
 from pydantic import BaseModel
 from typing import Dict, Optional
 import json, shutil, os, uuid
@@ -196,6 +197,14 @@ async def send_message(
         reply_msg = r.scalar_one_or_none()
 
     await manager.send_to(user_id, {**serialize_msg(msg, user_id, reply_msg), "from_id": current_user.id})
+
+    if not manager.active.get(user_id):
+        subs_r = await db.execute(select(PushSubscription).where(PushSubscription.user_id == user_id))
+        subs = subs_r.scalars().all()
+        if subs:
+            name = current_user.display_name or current_user.username
+            await send_push(subs, "Семейная сеть", f"{name}: {data.text or '📎 Вложение'}")
+
     return serialize_msg(msg, current_user.id, reply_msg)
 
 
@@ -239,6 +248,15 @@ async def send_file_message(
         reply_msg = r.scalar_one_or_none()
 
     await manager.send_to(user_id, {**serialize_msg(msg, user_id, reply_msg), "from_id": current_user.id})
+
+    if not manager.active.get(user_id):
+        subs_r = await db.execute(select(PushSubscription).where(PushSubscription.user_id == user_id))
+        subs = subs_r.scalars().all()
+        if subs:
+            name = current_user.display_name or current_user.username
+            body = "🎤 Голосовое" if file_type == "audio" else "🖼 Фото" if file_type == "image" else "📎 Файл"
+            await send_push(subs, "Семейная сеть", f"{name}: {body}")
+
     return serialize_msg(msg, current_user.id, reply_msg)
 
 

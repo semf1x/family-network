@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import engine, Base
 import models
-from routers import auth, users, messages, calls, posts
+from routers import auth, users, messages, calls, posts, push
 from sqlalchemy import text
 import os
 
@@ -51,6 +51,16 @@ async def startup():
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
         """))
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                endpoint TEXT NOT NULL UNIQUE,
+                p256dh TEXT NOT NULL,
+                auth TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """))
 
 
 app.include_router(auth.router)
@@ -58,6 +68,7 @@ app.include_router(users.router)
 app.include_router(messages.router)
 app.include_router(calls.router)
 app.include_router(posts.router)
+app.include_router(push.router)
 
 
 @app.get("/")

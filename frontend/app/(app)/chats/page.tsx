@@ -183,9 +183,15 @@ function ChatsPage() {
     })
   }, [searchParams]) // eslint-disable-line
 
+  function updateConversations(convs: any[]) {
+    setConversations(convs)
+    const unread = convs.filter(c => c.unread_count > 0).length
+    window.dispatchEvent(new CustomEvent("unread-count", { detail: unread }))
+  }
+
   // Загрузка диалогов + подписка на WS сообщения
   useEffect(() => {
-    api.getConversations().then(setConversations)
+    api.getConversations().then(updateConversations)
 
     const remove = addWSHandler((data) => {
       if (data.type === "read") {
@@ -200,7 +206,7 @@ function ChatsPage() {
       } else {
         setMessages(prev => [...prev, data])
       }
-      api.getConversations().then(setConversations)
+      api.getConversations().then(updateConversations)
 
       const s = JSON.parse(localStorage.getItem("app_settings") || "{}")
       if (s.sound !== false) playBeep()

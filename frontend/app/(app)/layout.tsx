@@ -7,7 +7,17 @@ import Link from "next/link"
 import { MessageCircle, User, Settings, LogOut, Sun, Moon, Phone } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { connectWS } from "@/lib/ws"
+import { api, BASE_URL } from "@/lib/api"
 import CallModal from "@/components/CallModal"
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/")
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i)
+  return outputArray
+}
 
 const nav = [
   { href: "/chats", icon: MessageCircle, label: "Чаты" },
@@ -36,6 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
+  const [totalUnread, setTotalUnread] = useState(0)
 
   useEffect(() => {
     const stored = localStorage.getItem("user")
@@ -50,8 +61,55 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const onUpdate = (e: Event) => setUser((e as CustomEvent).detail)
     window.addEventListener("user-updated", onUpdate)
-    return () => window.removeEventListener("user-updated", onUpdate)
+
+    const onUnread = (e: Event) => setTotalUnread((e as CustomEvent).detail)
+    window.addEventListener("unread-count", onUnread)
+
+    return () => {
+      window.removeEventListener("user-updated", onUpdate)
+      window.removeEventListener("unread-count", onUnread)
+    }
   }, [router])
+
+  // Fetch unread count on navigation
+  useEffect(() => {
+    if (!localStorage.getItem("token")) return
+    api.getConversations().then((convs: any[]) => {
+      setTotalUnread(convs.filter(c => c.unread_count > 0).length)
+    }).catch(() => {})
+  }, [pathname])
+
+  // Register service worker and subscribe to push
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return
+    const token = localStorage.getItem("token")
+    if (!token) return
+
+    navigator.serviceWorker.register("/sw.js").then(async (reg) => {
+      if (Notification.permission === "default") await Notification.requestPermission()
+      if (Notification.permission !== "granted") return
+
+      try {
+        const res = await fetch(`${BASE_URL}/push/vapid-public-key`)
+        const { public_key } = await res.json()
+        if (!public_key) return
+
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(public_key),
+        })
+
+        const p256dh = btoa(String.fromCharCode(...new Uint8Array(sub.getKey("p256dh")!)))
+        const auth = btoa(String.fromCharCode(...new Uint8Array(sub.getKey("auth")!)))
+
+        await fetch(`${BASE_URL}/push/subscribe`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh, auth } }),
+        })
+      } catch {}
+    }).catch(() => {})
+  }, [])
 
   function logout() {
     localStorage.clear()
@@ -83,7 +141,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
             >
-              <Icon size={18} />
+              <span className="relative">
+                <Icon size={18} />
+                {href === "/chats" && totalUnread > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {totalUnread > 9 ? "9+" : totalUnread}
+                  </span>
+                )}
+              </span>
               {label}
             </Link>
           ))}
@@ -138,7 +203,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   : "text-muted-foreground"
                 }`}
             >
-              <Icon size={20} />
+              <span className="relative">
+                <Icon size={20} />
+                {href === "/chats" && totalUnread > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {totalUnread > 9 ? "9+" : totalUnread}
+                  </span>
+                )}
+              </span>
               {label}
             </Link>
           ))}

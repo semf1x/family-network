@@ -14,3 +14,4 @@ aiosmtplib
 httpx
 email-validator
 pydantic[email]
+pywebpush
