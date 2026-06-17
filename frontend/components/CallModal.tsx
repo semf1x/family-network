@@ -21,17 +21,13 @@ export default function CallModal() {
 
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
-  const remoteAudioRef = useRef<HTMLAudioElement | null>(null)
+  const remoteAudioRef = useRef<HTMLAudioElement>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pendingIce = useRef<RTCIceCandidateInit[]>([])
   const remoteIdRef = useRef<number | null>(null)
   const callStartRef = useRef<number>(0)
 
   useEffect(() => {
-    const audio = new Audio()
-    audio.autoplay = true
-    remoteAudioRef.current = audio
-
     const removeWS = addWSHandler(async (data) => {
       if (data.type === "call_offer") {
         setRemote(data.caller_info)
@@ -90,7 +86,11 @@ export default function CallModal() {
     }
 
     pc.ontrack = (e) => {
-      if (remoteAudioRef.current) remoteAudioRef.current.srcObject = e.streams[0]
+      const audio = remoteAudioRef.current
+      if (audio) {
+        audio.srcObject = e.streams[0]
+        audio.play().catch(() => {})
+      }
     }
 
     pc.onconnectionstatechange = () => {
@@ -199,7 +199,7 @@ export default function CallModal() {
     setMuted(m => !m)
   }
 
-  if (!state) return null
+  if (!state) return <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
 
   const avatarSrc = remote?.avatar_url ? `${BASE_URL}${remote.avatar_url}` : undefined
   const name = remote?.display_name || remote?.username || "Неизвестный"
@@ -207,6 +207,7 @@ export default function CallModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       <div className="bg-card border rounded-3xl p-8 flex flex-col items-center gap-6 w-80 shadow-2xl">
         {/* Пульсирующий аватар при входящем */}
         <div className={state === "incoming" ? "animate-pulse" : ""}>

@@ -76,7 +76,7 @@ function AudioPlayer({ url }: { url: string }) {
   const [duration, setDuration] = useState(0)
   const [current, setCurrent] = useState(0)
   const ref = useRef<HTMLAudioElement>(null)
-  const bars = useMemo(() => generateWaveform(url), [url])
+  const bars = useMemo(() => generateWaveform(url, 32), [url])
 
   function seek(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -87,7 +87,7 @@ function AudioPlayer({ url }: { url: string }) {
   }
 
   return (
-    <div className="flex items-center gap-2.5 w-56">
+    <div className="flex items-center gap-2.5 w-full min-w-0">
       <audio ref={ref} src={url}
         onLoadedMetadata={() => setDuration(ref.current?.duration || 0)}
         onTimeUpdate={() => setCurrent(ref.current?.currentTime || 0)}
@@ -107,7 +107,7 @@ function AudioPlayer({ url }: { url: string }) {
       <div className="flex-1 flex flex-col gap-1">
         {/* Вейвформа */}
         <div
-          className="flex items-center gap-[2px] h-9 cursor-pointer"
+          className="flex items-center gap-[2px] h-9 cursor-pointer overflow-hidden"
           onClick={seek}
         >
           {bars.map((h, i) => {
@@ -168,6 +168,7 @@ function ChatsPage() {
   const messageRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const audioMimeRef = useRef<string>("audio/webm")
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => { setFontClass(getFontClass()) }, [])
@@ -292,7 +293,10 @@ function ChatsPage() {
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mr = new MediaRecorder(stream)
+      const preferred = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"]
+      const mimeType = preferred.find(t => MediaRecorder.isTypeSupported(t)) || ""
+      audioMimeRef.current = mimeType || "audio/webm"
+      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
       audioChunksRef.current = []
       mr.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
       mr.start()
@@ -314,8 +318,10 @@ function ChatsPage() {
     }
     await new Promise<void>(resolve => {
       mr.onstop = async () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" })
-        const file = new File([blob], "voice.webm", { type: "audio/webm" })
+        const mimeType = audioMimeRef.current
+        const ext = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : "webm"
+        const blob = new Blob(audioChunksRef.current, { type: mimeType })
+        const file = new File([blob], `voice.${ext}`, { type: mimeType })
         if (activeUser) {
           const msg = await api.sendFile(activeUser.id, file, replyTo?.id)
           setMessages(prev => [...prev, msg])
@@ -329,7 +335,7 @@ function ChatsPage() {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full overflow-hidden">
 
       {/* ── Список диалогов ── */}
       <div className={`border-r flex-col shrink-0 md:w-72 md:flex ${activeUser ? "hidden md:flex" : "flex w-full"}`}>

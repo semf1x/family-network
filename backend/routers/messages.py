@@ -15,7 +15,7 @@ UPLOAD_DIR = "uploads/messages"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 IMAGE_EXTS = {"jpg", "jpeg", "png", "webp", "gif"}
-AUDIO_EXTS = {"mp3", "wav", "ogg", "webm", "m4a", "aac", "opus"}
+AUDIO_EXTS = {"mp3", "wav", "ogg", "webm", "m4a", "aac", "opus", "mp4"}
 
 
 class SendMessage(BaseModel):

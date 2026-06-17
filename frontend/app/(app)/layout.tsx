@@ -121,7 +121,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex bg-background" style={{ height: "100dvh" }}>
 
       {/* Sidebar — десктоп */}
       <aside className="hidden md:flex w-64 border-r flex-col shrink-0">
