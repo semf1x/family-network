@@ -19,6 +19,41 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray
 }
 
+export async function subscribeToPush(reg?: ServiceWorkerRegistration, token?: string): Promise<boolean> {
+  try {
+    if (!("PushManager" in window)) return false
+    const t = token || localStorage.getItem("token")
+    if (!t) return false
+
+    const swReg = reg || await navigator.serviceWorker.ready
+
+    const res = await fetch(`${BASE_URL}/push/vapid-public-key`)
+    const { public_key } = await res.json()
+    if (!public_key) return false
+
+    // Unsubscribe old subscription (handles VAPID key rotation)
+    const existing = await swReg.pushManager.getSubscription()
+    if (existing) await existing.unsubscribe()
+
+    const sub = await swReg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(public_key),
+    })
+
+    const p256dh = btoa(String.fromCharCode(...new Uint8Array(sub.getKey("p256dh")!)))
+    const auth = btoa(String.fromCharCode(...new Uint8Array(sub.getKey("auth")!)))
+
+    await fetch(`${BASE_URL}/push/subscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+      body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh, auth } }),
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
 const nav = [
   { href: "/chats", icon: MessageCircle, label: "Чаты" },
   { href: "/calls", icon: Phone, label: "Звонки" },
@@ -86,28 +121,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (!token) return
 
     navigator.serviceWorker.register("/sw.js").then(async (reg) => {
-      if (Notification.permission === "default") await Notification.requestPermission()
       if (Notification.permission !== "granted") return
-
-      try {
-        const res = await fetch(`${BASE_URL}/push/vapid-public-key`)
-        const { public_key } = await res.json()
-        if (!public_key) return
-
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(public_key),
-        })
-
-        const p256dh = btoa(String.fromCharCode(...new Uint8Array(sub.getKey("p256dh")!)))
-        const auth = btoa(String.fromCharCode(...new Uint8Array(sub.getKey("auth")!)))
-
-        await fetch(`${BASE_URL}/push/subscribe`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh, auth } }),
-        })
-      } catch {}
+      await subscribeToPush(reg, token)
     }).catch(() => {})
   }, [])
 

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { api, BASE_URL } from "@/lib/api"
 import { Camera, KeyRound, User, Bell, Type, Trash2, CheckCircle2, XCircle, Loader2, Phone, Shield } from "lucide-react"
+import { subscribeToPush } from "@/app/(app)/layout"
 
 const FONT_SIZES = [
   { value: "small", label: "Маленький", cls: "text-xs" },
@@ -151,6 +152,8 @@ export default function SettingsPage() {
     if (!notifEnabled) {
       const perm = await Notification.requestPermission()
       if (perm !== "granted") return
+      // Subscribe to push with fresh key after user grants permission
+      await subscribeToPush()
     }
     const next = !notifEnabled
     setNotifEnabled(next)
