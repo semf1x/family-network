@@ -185,13 +185,22 @@
     0 8px 24px rgba(0,0,0,0.3);
 }
 
-/* Auth input field */
+/* Input field — theme-aware (used in settings + auth) */
 .auth-input-wrap {
-  background: rgba(10, 10, 14, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: border-color 0.15s;
+  background-color: var(--color-input);
+  border: 1px solid var(--color-border);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .auth-input-wrap:focus-within {
+  border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 8%, transparent);
+}
+/* In dark mode keep the deeper dark surface */
+.dark .auth-input-wrap {
+  background: rgba(10, 10, 14, 0.7);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.dark .auth-input-wrap:focus-within {
   border-color: rgba(75, 26, 255, 0.5);
   box-shadow: 0 0 0 3px rgba(75, 26, 255, 0.08);
 }

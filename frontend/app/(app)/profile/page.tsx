@@ -2,11 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { api, BASE_URL } from "@/lib/api"
-import { Plus, X, ImageIcon, Trash2 } from "lucide-react"
+import { Plus, X, ImageIcon, Trash2, Loader2 } from "lucide-react"
 import VerifiedBadge from "@/components/VerifiedBadge"
 
 function fmtDate(iso: string) {
@@ -69,111 +66,141 @@ export default function ProfilePage() {
     setPosts(prev => prev.filter(p => p.id !== id))
   }
 
-  if (!user) return <div className="flex items-center justify-center h-full text-muted-foreground">Загрузка...</div>
+  if (!user) return (
+    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+      <Loader2 size={18} className="animate-spin mr-2" /> Загрузка...
+    </div>
+  )
+
+  const canPost = title.trim() || text.trim() || image
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-8">
+    <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 flex flex-col gap-5">
 
       {/* ── Карточка профиля ── */}
-      <Card>
-        <CardContent className="py-8 px-8">
-          <div className="flex items-center gap-6">
-            <Avatar className="h-20 w-20 shrink-0">
-              <AvatarImage src={user.avatar_url ? `${BASE_URL}${user.avatar_url}` : undefined} />
-              <AvatarFallback className="text-2xl">
-                {(user.display_name || user.username)?.[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold">{user.display_name || user.username}</h2>
-                {user.badge_verified && <VerifiedBadge size={20} />}
-              </div>
-              {user.display_name && (
-                <p className="text-sm text-muted-foreground">@{user.username}</p>
-              )}
-              <p className="text-sm text-muted-foreground mt-0.5">{user.email}</p>
-              {user.bio && <p className="mt-2 text-sm">{user.bio}</p>}
-              <p className="text-xs text-muted-foreground mt-2">
-                В сети с {new Date(user.created_at).toLocaleDateString("ru-RU")}
-              </p>
+      <div className="rounded-2xl bg-card border border-white/5 p-5 md:p-6">
+        <div className="flex items-center gap-4 md:gap-6">
+          <Avatar className="h-16 w-16 md:h-20 md:w-20 shrink-0">
+            <AvatarImage src={user.avatar_url ? `${BASE_URL}${user.avatar_url}` : undefined} />
+            <AvatarFallback className="text-xl md:text-2xl bg-secondary">
+              {(user.display_name || user.username)?.[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-lg md:text-xl font-bold">{user.display_name || user.username}</h2>
+              {user.badge_verified && <VerifiedBadge size={18} />}
             </div>
+            {user.display_name && (
+              <p className="text-sm text-muted-foreground">@{user.username}</p>
+            )}
+            {user.bio && <p className="mt-2 text-sm">{user.bio}</p>}
+            <p className="text-xs text-muted-foreground mt-1.5">
+              В Kofka с {new Date(user.created_at).toLocaleDateString("ru-RU")}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* ── Новости ── */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Новости</h3>
-          <Button size="sm" variant="outline" onClick={() => setShowForm(s => !s)}>
-            {showForm ? <X size={14} className="mr-1.5" /> : <Plus size={14} className="mr-1.5" />}
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-base font-semibold">Новости</h3>
+          <button
+            onClick={() => { setShowForm(s => !s); if (showForm) resetForm() }}
+            className={`flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-medium transition-all
+              ${showForm
+                ? "bg-secondary border border-white/8 text-muted-foreground"
+                : "bg-gradient-brand-short text-white"
+              }`}
+          >
+            {showForm ? <X size={14} /> : <Plus size={14} />}
             {showForm ? "Отмена" : "Добавить"}
-          </Button>
+          </button>
         </div>
 
         {/* Форма создания */}
         {showForm && (
-          <Card className="border-dashed">
-            <CardContent className="pt-5 pb-5">
-              <form onSubmit={submitPost} className="flex flex-col gap-3">
-                <Input
+          <div className="rounded-2xl bg-card border border-white/5 p-4 md:p-5">
+            <form onSubmit={submitPost} className="flex flex-col gap-3">
+              {/* Заголовок */}
+              <div className="auth-input-wrap rounded-2xl px-4 py-3">
+                <input
                   placeholder="Заголовок новости"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  className="font-medium"
+                  className="w-full bg-transparent outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground/50"
                 />
+              </div>
+
+              {/* Текст */}
+              <div className="auth-input-wrap rounded-2xl px-4 py-3">
                 <textarea
                   placeholder="Текст новости..."
                   value={text}
                   onChange={e => setText(e.target.value)}
                   rows={3}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/50 resize-none"
                 />
+              </div>
 
-                {/* Превью фото */}
-                {preview && (
-                  <div className="relative">
-                    <img src={preview} alt="" className="w-full max-h-48 object-cover rounded-lg" />
-                    <button
-                      type="button"
-                      onClick={() => { setImage(null); setPreview(null) }}
-                      className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 pt-1">
+              {/* Превью фото */}
+              {preview && (
+                <div className="relative rounded-xl overflow-hidden">
+                  <img src={preview} alt="" className="w-full max-h-48 object-cover" />
                   <button
                     type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => { setImage(null); setPreview(null) }}
+                    className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 hover:bg-black/80 transition-colors"
                   >
-                    <ImageIcon size={16} /> Добавить фото
+                    <X size={13} />
                   </button>
-                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickImage} />
-                  <div className="flex-1" />
-                  <Button type="submit" size="sm" disabled={saving || (!title.trim() && !text.trim() && !image)}>
-                    {saving ? "Публикация..." : "Опубликовать"}
-                  </Button>
                 </div>
-              </form>
-            </CardContent>
-          </Card>
+              )}
+
+              {/* Действия */}
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="flex items-center gap-1.5 h-9 px-3 rounded-xl bg-secondary border border-white/8
+                             text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ImageIcon size={14} /> Фото
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickImage} />
+
+                <button
+                  type="submit"
+                  disabled={saving || !canPost}
+                  className="ml-auto h-9 px-5 rounded-xl bg-gradient-brand-short text-white text-sm font-medium
+                             hover:opacity-90 active:scale-[0.98] transition-all
+                             disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : "Опубликовать"}
+                </button>
+              </div>
+            </form>
+          </div>
         )}
 
-        {/* Плитка новостей */}
+        {/* Пустое состояние */}
         {posts.length === 0 && !showForm && (
-          <p className="text-sm text-muted-foreground text-center py-6">
-            Нет новостей. Поделитесь чем-нибудь с семьёй!
-          </p>
+          <div className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="h-14 w-14 rounded-2xl bg-secondary border border-white/5 flex items-center justify-center">
+              <Plus size={22} className="text-muted-foreground" />
+            </div>
+            <div>
+              <p className="font-medium text-sm">Нет новостей</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Поделитесь чем-нибудь с семьёй</p>
+            </div>
+          </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Сетка постов */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {posts.map(post => (
-            <div key={post.id} className="group relative rounded-xl border bg-card overflow-hidden hover:shadow-md transition-shadow">
+            <div key={post.id} className="group relative rounded-2xl bg-card border border-white/5 overflow-hidden hover:border-white/10 transition-colors">
               {post.image_url && (
                 <img
                   src={`${BASE_URL}${post.image_url}`}
@@ -183,7 +210,7 @@ export default function ProfilePage() {
               )}
               <div className="p-4 flex flex-col gap-1.5">
                 {post.title && (
-                  <h4 className="font-semibold leading-snug line-clamp-2">{post.title}</h4>
+                  <h4 className="font-semibold leading-snug line-clamp-2 text-sm">{post.title}</h4>
                 )}
                 {post.text && (
                   <p className="text-sm text-muted-foreground line-clamp-3">{post.text}</p>
@@ -191,10 +218,10 @@ export default function ProfilePage() {
                 <p className="text-xs text-muted-foreground mt-1">{fmtDate(post.created_at)}</p>
               </div>
 
-              {/* Кнопка удаления */}
               <button
                 onClick={() => deletePost(post.id)}
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white rounded-full p-1.5 hover:bg-red-500/80"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity
+                           bg-black/60 text-white rounded-full p-1.5 hover:bg-red-500/80"
                 title="Удалить"
               >
                 <Trash2 size={13} />

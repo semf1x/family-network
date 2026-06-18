@@ -200,7 +200,7 @@ export default function SettingsPage() {
           </div>
           <div className="space-y-1">
             <SecBtn onClick={() => fileRef.current?.click()}>Изменить фото</SecBtn>
-            <p className="text-xs text-white/30">JPG, PNG или WebP</p>
+            <p className="text-xs text-muted-foreground">JPG, PNG или WebP</p>
           </div>
           <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={handleAvatarChange} />
         </div>
@@ -213,7 +213,7 @@ export default function SettingsPage() {
             <input
               value={displayName} onChange={e => setDisplayName(e.target.value)}
               placeholder="Иван Петров" maxLength={100}
-              className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+              className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/50"
             />
           </Field>
 
@@ -236,7 +236,7 @@ export default function SettingsPage() {
               <input
                 value={username} onChange={e => handleUsernameChange(e.target.value)}
                 placeholder="ivan_petrov" maxLength={20}
-                className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/50"
               />
             </div>
           </Field>
@@ -245,7 +245,7 @@ export default function SettingsPage() {
             <textarea
               value={bio} onChange={e => setBio(e.target.value)}
               placeholder="Расскажите о себе..." rows={2}
-              className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25 resize-none py-0.5"
+              className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/50 resize-none py-0.5"
             />
           </Field>
 
@@ -265,21 +265,21 @@ export default function SettingsPage() {
             <input
               type="password" value={oldPw} onChange={e => handlePwInput("old", e.target.value)}
               placeholder="••••••••" maxLength={20}
-              className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+              className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/50"
             />
           </Field>
           <Field label="Новый пароль" hint={pwErrors.new ? <FieldHint error>{pwErrors.new}</FieldHint> : newPw && !pwErrors.new ? <FieldHint>{newPw.length}/20</FieldHint> : null}>
             <input
               type="password" value={newPw} onChange={e => handlePwInput("new", e.target.value)}
               placeholder="••••••••" maxLength={20}
-              className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+              className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/50"
             />
           </Field>
           <Field label="Повторите пароль" hint={pwErrors.confirm ? <FieldHint error>{pwErrors.confirm}</FieldHint> : null}>
             <input
               type="password" value={confirmPw} onChange={e => handlePwInput("confirm", e.target.value)}
               placeholder="••••••••" maxLength={20}
-              className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+              className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/50"
             />
           </Field>
 
@@ -301,11 +301,11 @@ export default function SettingsPage() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">{user.phone}</p>
-              <p className="text-xs text-white/30">Номер подтверждён</p>
+              <p className="text-xs text-muted-foreground">Номер подтверждён</p>
             </div>
             <button
               onClick={() => { setPhoneStep("input"); setPhone(user.phone || ""); setPhoneMsg({ ok: "", err: "" }) }}
-              className="text-xs text-white/40 hover:text-white/70 transition-colors underline underline-offset-2"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
             >
               Изменить
             </button>
@@ -316,7 +316,7 @@ export default function SettingsPage() {
               <input
                 type="tel" value={phone} onChange={e => setPhone(e.target.value)}
                 placeholder="+7 900 000 00 00"
-                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+                className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/50"
               />
             </Field>
             {phoneMsg.err && <StatusPill error>{phoneMsg.err}</StatusPill>}
@@ -327,12 +327,12 @@ export default function SettingsPage() {
           </form>
         ) : (
           <form onSubmit={handleVerifyPhone} className="space-y-4">
-            <p className="text-sm text-white/40">Код отправлен на <span className="text-white/70 font-medium">{phone}</span></p>
+            <p className="text-sm text-muted-foreground">Код отправлен на <span className="text-foreground font-medium">{phone}</span></p>
             <Field label="Код из SMS">
               <input
                 value={phoneCode} onChange={e => setPhoneCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="123456" maxLength={6} inputMode="numeric"
-                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25 tracking-[0.2em]"
+                className="w-full bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/50 tracking-[0.2em]"
               />
             </Field>
             {phoneMsg.err && <StatusPill error>{phoneMsg.err}</StatusPill>}
@@ -397,7 +397,7 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
-          <p className={`text-white/30 px-1 ${FONT_SIZES.find(f => f.value === fontSize)?.cls}`}>
+          <p className={`text-muted-foreground px-1 ${FONT_SIZES.find(f => f.value === fontSize)?.cls}`}>
             Вот так будут выглядеть сообщения в чате
           </p>
         </div>
@@ -408,7 +408,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">Очистить кэш</p>
-            <p className="text-xs text-white/30">Сбросить сохранённые настройки и кэш</p>
+            <p className="text-xs text-muted-foreground">Сбросить сохранённые настройки и кэш</p>
           </div>
           <SecBtn onClick={clearCache}>{cacheCleared ? "Готово ✓" : "Очистить"}</SecBtn>
         </div>
@@ -438,7 +438,7 @@ function Field({ label, children, suffix, hint }: {
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold text-white/35 uppercase tracking-[0.1em]">{label}</label>
+      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.1em]">{label}</label>
       <div className="auth-input-wrap rounded-2xl px-4 py-3 flex items-start gap-2">
         <div className="flex-1 min-w-0">{children}</div>
         {suffix && <div className="shrink-0 mt-0.5">{suffix}</div>}
@@ -449,7 +449,7 @@ function Field({ label, children, suffix, hint }: {
 }
 
 function FieldHint({ children, error, success, warn }: { children: React.ReactNode; error?: boolean; success?: boolean; warn?: boolean }) {
-  const color = error ? "text-red-400" : success ? "text-emerald-400" : warn ? "text-amber-400" : "text-white/25"
+  const color = error ? "text-red-400" : success ? "text-emerald-400" : warn ? "text-amber-400" : "text-muted-foreground/60"
   return <p className={`text-[11px] px-1 ${color}`}>{children}</p>
 }
 
@@ -500,7 +500,7 @@ function ToggleRow({ label, description, checked, disabled, onChange }: {
     <div className="flex items-center justify-between gap-4">
       <div className="min-w-0">
         <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs text-white/30 mt-0.5">{description}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
       </div>
       <button
         onClick={onChange} disabled={disabled}
