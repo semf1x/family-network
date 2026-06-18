@@ -193,7 +193,15 @@ async def send_message(
 
     reply_msg = None
     if msg.reply_to_id:
-        r = await db.execute(select(Message).where(Message.id == msg.reply_to_id))
+        r = await db.execute(
+            select(Message).where(
+                Message.id == msg.reply_to_id,
+                or_(
+                    and_(Message.from_id == current_user.id, Message.to_id == user_id),
+                    and_(Message.from_id == user_id, Message.to_id == current_user.id),
+                ),
+            )
+        )
         reply_msg = r.scalar_one_or_none()
 
     await manager.send_to(user_id, {**serialize_msg(msg, user_id, reply_msg), "from_id": current_user.id})
@@ -244,7 +252,15 @@ async def send_file_message(
 
     reply_msg = None
     if msg.reply_to_id:
-        r = await db.execute(select(Message).where(Message.id == msg.reply_to_id))
+        r = await db.execute(
+            select(Message).where(
+                Message.id == msg.reply_to_id,
+                or_(
+                    and_(Message.from_id == current_user.id, Message.to_id == user_id),
+                    and_(Message.from_id == user_id, Message.to_id == current_user.id),
+                ),
+            )
+        )
         reply_msg = r.scalar_one_or_none()
 
     await manager.send_to(user_id, {**serialize_msg(msg, user_id, reply_msg), "from_id": current_user.id})

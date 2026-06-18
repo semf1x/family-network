@@ -9,7 +9,7 @@ from email_service import send_verification_code
 from jose import JWTError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import redis.asyncio as aioredis
-import random
+import secrets
 import os
 import re
 
@@ -67,7 +67,7 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.commit()
 
-    code = str(random.randint(100000, 999999))
+    code = str(secrets.randbelow(900000) + 100000)
     await redis_client.setex(f"verify:{data.email}", VERIFY_TTL, code)
     await send_verification_code(data.email, code)
 
@@ -102,7 +102,7 @@ async def resend_code(data: ResendCodeRequest, db: AsyncSession = Depends(get_db
     if user.is_verified:
         raise HTTPException(status_code=400, detail="Email уже подтверждён")
 
-    code = str(random.randint(100000, 999999))
+    code = str(secrets.randbelow(900000) + 100000)
     await redis_client.setex(f"verify:{data.email}", VERIFY_TTL, code)
     await send_verification_code(data.email, code)
 

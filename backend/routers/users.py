@@ -9,7 +9,7 @@ from auth import verify_password, hash_password
 from sms_service import send_sms_code
 from pydantic import BaseModel
 from typing import Optional, List
-import shutil, os, uuid, re, random
+import shutil, os, uuid, re, secrets
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -146,7 +146,7 @@ async def request_phone_verify(
     current_user.phone_verified = False
     await db.commit()
 
-    code = str(random.randint(100000, 999999))
+    code = str(secrets.randbelow(900000) + 100000)
     await redis_client.setex(f"phone_verify:{current_user.id}", 600, code)
     await send_sms_code(phone, code)
 
@@ -247,10 +247,25 @@ async def toggle_badge(
     return {"badge_verified": target.badge_verified, "username": target.username}
 
 
-@router.get("/{user_id}", response_model=UserOut)
-async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
+@router.get("/{user_id}", response_model=UserPublicOut)
+async def get_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    return UserPublicOut(
+        id=user.id,
+        username=user.username,
+        display_name=user.display_name,
+        avatar_url=user.avatar_url,
+        bio=user.bio,
+        phone=user.phone if (user.show_phone and user.phone_verified) else None,
+        phone_verified=user.phone_verified,
+        is_verified=user.is_verified,
+        badge_verified=user.badge_verified,
+        created_at=user.created_at,
+    )
