@@ -2,19 +2,16 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "@/lib/api"
-import { Smartphone, CheckCircle2, XCircle, Loader2 } from "lucide-react"
+import { CheckCircle2, XCircle, Loader2, ArrowLeft, Smartphone } from "lucide-react"
 
 type Screen = "auth" | "verify"
+type Tab = "login" | "register"
 
 export default function AuthPage() {
   const router = useRouter()
   const [screen, setScreen] = useState<Screen>("auth")
+  const [tab, setTab] = useState<Tab>("login")
 
   useEffect(() => {
     if (localStorage.getItem("token")) router.replace("/chats")
@@ -25,14 +22,16 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
 
   const [loginData, setLoginData] = useState({ phone: "", password: "" })
-  const [registerData, setRegisterData] = useState({ display_name: "", username: "", phone: "", password: "" })
+  const [registerData, setRegisterData] = useState({
+    display_name: "", username: "", phone: "", password: "",
+  })
 
-  // Username availability state
-  const [usernameHint, setUsernameHint] = useState("")
-  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle")
+  // Username check
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "ok" | "taken">("idle")
   const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const USERNAME_RE = /^[a-z][a-z0-9_]{3,19}$/
 
-  // OTP state
+  // OTP
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
   const [resendCooldown, setResendCooldown] = useState(0)
@@ -55,8 +54,7 @@ export default function AuthPage() {
     router.push("/chats")
   }
 
-  // ── Login ──────────────────────────────────────────────
-  async function handleLogin(e: React.SyntheticEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError("")
     setLoading(true)
@@ -69,45 +67,26 @@ export default function AuthPage() {
     }
   }
 
-  // ── Username check ─────────────────────────────────────
-  const USERNAME_RE = /^[a-z][a-z0-9_]{3,19}$/
-
   function handleUsernameInput(value: string) {
     const cleaned = value.toLowerCase().replace(/[^a-z0-9_]/g, "")
     setRegisterData(d => ({ ...d, username: cleaned }))
     setUsernameStatus("idle")
-
-    if (!cleaned) { setUsernameHint(""); return }
-    if (cleaned.length < 4) { setUsernameHint("Минимум 4 символа"); return }
-    if (!/^[a-z]/.test(cleaned)) { setUsernameHint("Должен начинаться с буквы"); return }
-    setUsernameHint("")
-
     if (!USERNAME_RE.test(cleaned)) return
-
     if (usernameTimer.current) clearTimeout(usernameTimer.current)
     setUsernameStatus("checking")
     usernameTimer.current = setTimeout(async () => {
       try {
         const res = await api.checkUsernamePublic(cleaned)
-        setUsernameStatus(res.available ? "available" : "taken")
-      } catch {
-        setUsernameStatus("idle")
-      }
+        setUsernameStatus(res.available ? "ok" : "taken")
+      } catch { setUsernameStatus("idle") }
     }, 500)
   }
 
-  // ── Register ───────────────────────────────────────────
-  async function handleRegister(e: React.SyntheticEvent) {
+  async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError("")
-    if (!USERNAME_RE.test(registerData.username)) {
-      setError("Username: 4-20 символов, строчные буквы, цифры и _")
-      return
-    }
-    if (usernameStatus === "taken") {
-      setError("Этот username уже занят")
-      return
-    }
+    if (!USERNAME_RE.test(registerData.username)) { setError("Username: 4-20 символов, строчные буквы и _"); return }
+    if (usernameStatus === "taken") { setError("Этот username уже занят"); return }
     setLoading(true)
     try {
       await api.register({
@@ -127,45 +106,34 @@ export default function AuthPage() {
     }
   }
 
-  // ── OTP input ──────────────────────────────────────────
-  function handleOtpChange(index: number, value: string) {
+  function handleOtpChange(i: number, value: string) {
     const digit = value.replace(/\D/g, "").slice(-1)
-    const next = [...otp]
-    next[index] = digit
-    setOtp(next)
-    if (digit && index < 5) otpRefs.current[index + 1]?.focus()
+    const next = [...otp]; next[i] = digit; setOtp(next)
+    if (digit && i < 5) otpRefs.current[i + 1]?.focus()
   }
 
-  function handleOtpKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus()
-    }
+  function handleOtpKeyDown(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus()
   }
 
   function handleOtpPaste(e: React.ClipboardEvent<HTMLInputElement>) {
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
-    if (pasted.length === 6) {
-      setOtp(pasted.split(""))
-      otpRefs.current[5]?.focus()
-    }
+    if (pasted.length === 6) { setOtp(pasted.split("")); otpRefs.current[5]?.focus() }
     e.preventDefault()
   }
 
-  async function handleVerify(e: React.SyntheticEvent) {
+  async function handleVerify(e: React.FormEvent) {
     e.preventDefault()
     const code = otp.join("")
     if (code.length < 6) return
-    setError("")
-    setLoading(true)
+    setError(""); setLoading(true)
     try {
       saveAndRedirect(await api.verifyPhone({ phone: pendingPhone, code }))
     } catch (err: any) {
       setError(err.message)
       setOtp(["", "", "", "", "", ""])
       otpRefs.current[0]?.focus()
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   async function handleResend() {
@@ -175,249 +143,288 @@ export default function AuthPage() {
       startCooldown()
       setOtp(["", "", "", "", "", ""])
       otpRefs.current[0]?.focus()
-    } catch (err: any) {
-      setError(err.message)
-    }
+    } catch (err: any) { setError(err.message) }
   }
 
-  // ── Verify screen ──────────────────────────────────────
-  if (screen === "verify") {
+  // ── Shared layout wrapper ──────────────────────────────
+  function Layout({ children }: { children: React.ReactNode }) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md">
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <img src="/kofka-icon.svg" alt="Kofka" className="h-16 w-auto" />
-            <div className="text-left">
-              <h1 className="font-kofka text-4xl font-bold text-primary tracking-tight leading-none">Kofka</h1>
-              <p className="text-sm text-muted-foreground tracking-[0.15em] uppercase mt-1">Social Network</p>
+      <div className="auth-bg min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-[380px] space-y-6">
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-1">
+            <img src="/kofka-icon.svg" alt="Kofka" className="h-10 w-auto" />
+            <div>
+              <h1 className="font-kofka text-2xl font-bold leading-none tracking-wide"
+                  style={{ background: "linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                Kofka
+              </h1>
+              <p className="text-[10px] text-white/30 tracking-[0.18em] uppercase mt-0.5">Social Network</p>
             </div>
           </div>
 
-          <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <Smartphone className="h-6 w-6 text-primary" />
-              </div>
-              <CardTitle>Введите код из SMS</CardTitle>
-              <CardDescription>
-                Мы отправили 6-значный код на<br />
-                <span className="font-medium text-foreground">{pendingPhone}</span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleVerify} className="space-y-6">
-                <div className="flex justify-center gap-2">
-                  {otp.map((digit, i) => (
-                    <input
-                      key={i}
-                      ref={el => { otpRefs.current[i] = el }}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={e => handleOtpChange(i, e.target.value)}
-                      onKeyDown={e => handleOtpKeyDown(i, e)}
-                      onPaste={i === 0 ? handleOtpPaste : undefined}
-                      className="h-12 w-10 rounded-xl border border-input bg-secondary text-center text-xl font-bold
-                                 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
-                                 transition-all"
-                    />
-                  ))}
-                </div>
-
-                {error && <p className="text-destructive text-sm text-center">{error}</p>}
-
-                <button
-                  type="submit"
-                  disabled={loading || otp.join("").length < 6}
-                  className="w-full h-11 rounded-2xl bg-gradient-brand-short text-white font-medium
-                             disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                >
-                  {loading ? "Проверяем..." : "Подтвердить"}
-                </button>
-
-                <p className="text-center text-sm text-muted-foreground">
-                  Не пришёл код?{" "}
-                  {resendCooldown > 0 ? (
-                    <span>Повторить через {resendCooldown}с</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleResend}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      Отправить снова
-                    </button>
-                  )}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => { setScreen("auth"); setOtp(["", "", "", "", "", ""]); setError("") }}
-                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  ← Назад
-                </button>
-              </form>
-            </CardContent>
-          </Card>
+          {/* Card */}
+          <div className="auth-card rounded-[28px] p-7">
+            {children}
+          </div>
         </div>
       </div>
     )
   }
 
+  // ── Verify screen ──────────────────────────────────────
+  if (screen === "verify") {
+    return (
+      <Layout>
+        <div className="space-y-6">
+          <div>
+            <div className="h-11 w-11 rounded-2xl bg-gradient-brand-short flex items-center justify-center mb-4">
+              <Smartphone size={20} className="text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-white">Введите код</h2>
+            <p className="text-sm text-white/40 mt-1">
+              Отправили SMS на <span className="text-white/70 font-medium">{pendingPhone}</span>
+            </p>
+          </div>
+
+          <form onSubmit={handleVerify} className="space-y-5">
+            <div className="flex gap-2 justify-between">
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={el => { otpRefs.current[i] = el }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={e => handleOtpChange(i, e.target.value)}
+                  onKeyDown={e => handleOtpKeyDown(i, e)}
+                  onPaste={i === 0 ? handleOtpPaste : undefined}
+                  className="h-14 w-full rounded-2xl auth-input-wrap bg-transparent
+                             text-center text-2xl font-bold text-white outline-none
+                             caret-primary selection:bg-primary/30"
+                  style={{ background: "rgba(10,10,14,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}
+                />
+              ))}
+            </div>
+
+            {error && (
+              <p className="text-[13px] text-red-400 bg-red-400/10 rounded-xl px-3 py-2">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || otp.join("").length < 6}
+              className="w-full h-12 rounded-2xl bg-gradient-brand-short text-white font-semibold text-[15px]
+                         hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {loading ? <Loader2 size={18} className="animate-spin mx-auto" /> : "Подтвердить"}
+            </button>
+
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => { setScreen("auth"); setOtp(["", "", "", "", "", ""]); setError("") }}
+                className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white/70 transition-colors"
+              >
+                <ArrowLeft size={14} /> Назад
+              </button>
+              {resendCooldown > 0 ? (
+                <span className="text-sm text-white/30">Повторить через {resendCooldown}с</span>
+              ) : (
+                <button type="button" onClick={handleResend}
+                  className="text-sm text-primary hover:text-primary/80 font-medium transition-colors">
+                  Отправить снова
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+      </Layout>
+    )
+  }
+
   // ── Auth screen ────────────────────────────────────────
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <img src="/kofka-icon.svg" alt="Kofka" className="h-16 w-auto" />
-          <div className="text-left">
-            <h1 className="font-kofka text-4xl font-bold text-primary tracking-tight leading-none">Kofka</h1>
-            <p className="text-sm text-muted-foreground tracking-[0.15em] uppercase mt-1">Social Network</p>
-          </div>
+    <Layout>
+      <div className="space-y-6">
+        {/* Heading */}
+        <div>
+          <h2 className="text-xl font-bold text-white">
+            {tab === "login" ? "С возвращением" : "Создать аккаунт"}
+          </h2>
+          <p className="text-sm text-white/40 mt-0.5">
+            {tab === "login" ? "Войдите по номеру телефона" : "Присоединитесь к Kofka"}
+          </p>
         </div>
 
-        <Tabs defaultValue="login" onValueChange={() => { setError(""); setUsernameStatus("idle") }}>
-          <TabsList className="w-full">
-            <TabsTrigger value="login" className="flex-1">Войти</TabsTrigger>
-            <TabsTrigger value="register" className="flex-1">Регистрация</TabsTrigger>
-          </TabsList>
+        {/* Pill tab switcher */}
+        <div className="flex rounded-2xl p-1" style={{ background: "rgba(10,10,14,0.6)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          {(["login", "register"] as Tab[]).map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => { setTab(t); setError(""); setUsernameStatus("idle") }}
+              className={`flex-1 h-9 rounded-xl text-sm font-medium transition-all duration-200 ${
+                tab === t
+                  ? "bg-gradient-brand-short text-white shadow-sm"
+                  : "text-white/40 hover:text-white/70"
+              }`}
+            >
+              {t === "login" ? "Войти" : "Регистрация"}
+            </button>
+          ))}
+        </div>
 
-          {/* ── LOGIN ── */}
-          <TabsContent value="login">
-            <Card>
-              <CardHeader>
-                <CardTitle>Добро пожаловать</CardTitle>
-                <CardDescription>Войдите по номеру телефона</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-phone">Номер телефона</Label>
-                    <Input
-                      id="login-phone"
-                      type="tel"
-                      placeholder="+7 999 123-45-67"
-                      value={loginData.phone}
-                      onChange={e => setLoginData({ ...loginData, phone: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Пароль</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={loginData.password}
-                      onChange={e => setLoginData({ ...loginData, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                  {error && <p className="text-destructive text-sm">{error}</p>}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full h-11 rounded-2xl bg-gradient-brand-short text-white font-medium
-                               disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Входим..." : "Войти"}
-                  </button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
+        {/* Forms */}
+        {tab === "login" ? (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <Field label="Номер телефона">
+              <input
+                type="tel"
+                placeholder="+7 999 123-45-67"
+                value={loginData.phone}
+                onChange={e => setLoginData({ ...loginData, phone: e.target.value })}
+                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+                required
+              />
+            </Field>
 
-          {/* ── REGISTER ── */}
-          <TabsContent value="register">
-            <Card>
-              <CardHeader>
-                <CardTitle>Создать аккаунт</CardTitle>
-                <CardDescription>Присоединитесь к Kofka</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-name">Ваше имя</Label>
-                    <Input
-                      id="reg-name"
-                      placeholder="Иван Петров"
-                      value={registerData.display_name}
-                      onChange={e => setRegisterData({ ...registerData, display_name: e.target.value })}
-                    />
-                  </div>
+            <Field label="Пароль">
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={loginData.password}
+                onChange={e => setLoginData({ ...loginData, password: e.target.value })}
+                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+                required
+              />
+            </Field>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-username">Username</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none">@</span>
-                      <Input
-                        id="reg-username"
-                        placeholder="ivan_petrov"
-                        className="pl-7 pr-9"
-                        value={registerData.username}
-                        onChange={e => handleUsernameInput(e.target.value)}
-                        maxLength={20}
-                        required
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                        {usernameStatus === "checking" && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-                        {usernameStatus === "available" && <CheckCircle2 size={14} className="text-green-500" />}
-                        {usernameStatus === "taken" && <XCircle size={14} className="text-destructive" />}
-                      </span>
-                    </div>
-                    {usernameHint
-                      ? <p className="text-xs text-amber-500">{usernameHint}</p>
-                      : usernameStatus === "available"
-                        ? <p className="text-xs text-green-500">Username свободен</p>
-                        : usernameStatus === "taken"
-                          ? <p className="text-xs text-destructive">Username уже занят</p>
-                          : <p className="text-xs text-muted-foreground">4-20 символов, буквы, цифры и _</p>
-                    }
-                  </div>
+            {error && <ErrorMsg>{error}</ErrorMsg>}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-phone">Номер телефона</Label>
-                    <Input
-                      id="reg-phone"
-                      type="tel"
-                      placeholder="+7 999 123-45-67"
-                      value={registerData.phone}
-                      onChange={e => setRegisterData({ ...registerData, phone: e.target.value })}
-                      required
-                    />
-                  </div>
+            <SubmitBtn loading={loading}>Войти</SubmitBtn>
+          </form>
+        ) : (
+          <form onSubmit={handleRegister} className="space-y-4">
+            <Field label="Ваше имя">
+              <input
+                type="text"
+                placeholder="Иван Петров"
+                value={registerData.display_name}
+                onChange={e => setRegisterData({ ...registerData, display_name: e.target.value })}
+                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+              />
+            </Field>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="reg-password">Пароль</Label>
-                    <Input
-                      id="reg-password"
-                      type="password"
-                      placeholder="Минимум 6 символов"
-                      value={registerData.password}
-                      onChange={e => setRegisterData({ ...registerData, password: e.target.value })}
-                      minLength={6}
-                      required
-                    />
-                  </div>
+            <Field
+              label="Username"
+              suffix={
+                usernameStatus === "checking" ? <Loader2 size={13} className="animate-spin text-white/30" /> :
+                usernameStatus === "ok" ? <CheckCircle2 size={13} className="text-emerald-400" /> :
+                usernameStatus === "taken" ? <XCircle size={13} className="text-red-400" /> : null
+              }
+              hint={
+                usernameStatus === "ok" ? { text: "Свободен", color: "text-emerald-400" } :
+                usernameStatus === "taken" ? { text: "Уже занят", color: "text-red-400" } :
+                { text: "4-20 символов, буквы, цифры, _", color: "text-white/25" }
+              }
+            >
+              <div className="flex items-center gap-1">
+                <span className="text-white/25 text-sm select-none">@</span>
+                <input
+                  type="text"
+                  placeholder="ivan_petrov"
+                  value={registerData.username}
+                  onChange={e => handleUsernameInput(e.target.value)}
+                  maxLength={20}
+                  className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+                  required
+                />
+              </div>
+            </Field>
 
-                  {error && <p className="text-destructive text-sm">{error}</p>}
+            <Field label="Номер телефона">
+              <input
+                type="tel"
+                placeholder="+7 999 123-45-67"
+                value={registerData.phone}
+                onChange={e => setRegisterData({ ...registerData, phone: e.target.value })}
+                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+                required
+              />
+            </Field>
 
-                  <button
-                    type="submit"
-                    disabled={loading || usernameStatus === "taken" || usernameStatus === "checking"}
-                    className="w-full h-11 rounded-2xl bg-gradient-brand-short text-white font-medium
-                               disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Создаём..." : "Зарегистрироваться"}
-                  </button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            <Field label="Пароль">
+              <input
+                type="password"
+                placeholder="Минимум 6 символов"
+                value={registerData.password}
+                onChange={e => setRegisterData({ ...registerData, password: e.target.value })}
+                minLength={6}
+                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+                required
+              />
+            </Field>
+
+            {error && <ErrorMsg>{error}</ErrorMsg>}
+
+            <SubmitBtn loading={loading} disabled={usernameStatus === "taken" || usernameStatus === "checking"}>
+              Зарегистрироваться
+            </SubmitBtn>
+          </form>
+        )}
       </div>
+    </Layout>
+  )
+}
+
+// ── Sub-components ─────────────────────────────────────
+
+function Field({
+  label, children, suffix, hint,
+}: {
+  label: string
+  children: React.ReactNode
+  suffix?: React.ReactNode
+  hint?: { text: string; color: string }
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-semibold text-white/35 uppercase tracking-[0.1em]">
+        {label}
+      </label>
+      <div className="auth-input-wrap h-12 rounded-2xl px-4 flex items-center gap-2">
+        <div className="flex-1 min-w-0">{children}</div>
+        {suffix && <div className="shrink-0">{suffix}</div>}
+      </div>
+      {hint && <p className={`text-[11px] px-1 ${hint.color}`}>{hint.text}</p>}
     </div>
+  )
+}
+
+function ErrorMsg({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[13px] text-red-400 bg-red-400/10 rounded-xl px-3 py-2">{children}</p>
+  )
+}
+
+function SubmitBtn({
+  children, loading, disabled,
+}: {
+  children: React.ReactNode
+  loading: boolean
+  disabled?: boolean
+}) {
+  return (
+    <button
+      type="submit"
+      disabled={loading || disabled}
+      className="w-full h-12 rounded-2xl bg-gradient-brand-short text-white font-semibold text-[15px]
+                 hover:opacity-90 active:scale-[0.98] transition-all mt-2
+                 disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      {loading ? <Loader2 size={18} className="animate-spin mx-auto" /> : children}
+    </button>
   )
 }

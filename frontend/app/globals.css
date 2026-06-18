@@ -164,6 +164,38 @@
   box-shadow: 0 1px 3px oklch(0 0 0 / 40%), 0 0 0 1px oklch(1 0 0 / 7%);
 }
 
+/* Auth page mesh background */
+.auth-bg {
+  background-color: #0E0E12;
+  background-image:
+    radial-gradient(ellipse 60% 50% at 15% 20%, rgba(75, 26, 255, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 75%, rgba(26, 117, 255, 0.14) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 35% at 70% 10%, rgba(110, 26, 255, 0.10) 0%, transparent 60%);
+}
+
+/* Auth card glass surface */
+.auth-card {
+  background: rgba(22, 22, 28, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 32px 64px rgba(0,0,0,0.5),
+    0 8px 24px rgba(0,0,0,0.3);
+}
+
+/* Auth input field */
+.auth-input-wrap {
+  background: rgba(10, 10, 14, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.15s;
+}
+.auth-input-wrap:focus-within {
+  border-color: rgba(75, 26, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(75, 26, 255, 0.08);
+}
+
 /* Prevent iOS Safari zoom on input focus */
 @media screen and (max-width: 768px) {
   input, textarea, select {
