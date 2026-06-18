@@ -539,27 +539,27 @@ function ChatsPage() {
                         {/* Контент */}
                         {msg.file_type === "image" ? (
                           <a href={`${BASE}${msg.file_url}`} target="_blank" rel="noreferrer"
-                            className={`block rounded-2xl overflow-hidden border-2 ${msg.is_mine ? "border-primary" : "border-muted"}`}>
+                            className={`block rounded-2xl overflow-hidden ${msg.is_mine ? "ring-2 ring-primary/40" : "ring-1 ring-border"}`}>
                             <img src={`${BASE}${msg.file_url}`} alt={msg.file_name || ""} className="max-w-xs max-h-60 object-cover" />
                           </a>
                         ) : msg.file_type === "audio" ? (
                           <div className={`px-3 py-2.5 rounded-2xl ${msg.is_mine
-                            ? "bg-primary text-primary-foreground rounded-br-sm"
-                            : "bg-accent border border-primary/20 rounded-bl-sm"}`}>
+                            ? "bg-gradient-brand-short text-white rounded-br-sm"
+                            : "bg-secondary border border-white/8 rounded-bl-sm"}`}>
                             <AudioPlayer url={`${BASE}${msg.file_url}`} isMine={msg.is_mine} />
                           </div>
                         ) : msg.file_type === "file" ? (
                           <a href={`${BASE}${msg.file_url}`} download={msg.file_name} target="_blank" rel="noreferrer"
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl ${fontClass}
-                              ${msg.is_mine ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                              ${msg.is_mine ? "bg-gradient-brand-short text-white" : "bg-secondary border border-white/8"}`}>
                             <FileIcon size={16} className="shrink-0" />
                             <span className="truncate max-w-[180px]">{msg.file_name}</span>
                           </a>
                         ) : (
-                          <div className={`px-4 py-2 rounded-2xl ${fontClass}
+                          <div className={`px-4 py-2.5 rounded-2xl ${fontClass}
                             ${msg.is_mine
-                              ? "bg-primary text-primary-foreground rounded-br-sm"
-                              : "bg-muted rounded-bl-sm"}`}>
+                              ? "bg-gradient-brand-short text-white rounded-br-sm"
+                              : "bg-secondary border border-white/5 rounded-bl-sm"}`}>
                             {msg.text}
                           </div>
                         )}
@@ -601,23 +601,25 @@ function ChatsPage() {
 
             {/* Ввод / запись */}
             {isRecording ? (
-              <div className="p-4 border-t flex gap-3 items-center shrink-0">
-                <div className="flex-1 flex items-center gap-3 bg-muted rounded-full px-4 py-2.5">
+              <div className="p-3 border-t flex gap-2 items-center shrink-0">
+                <div className="flex-1 flex items-center gap-3 bg-secondary rounded-2xl px-4 py-3">
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
                   <span className="text-sm font-medium tabular-nums">{fmtDuration(recordingTime)}</span>
-                  <span className="text-xs text-muted-foreground">Запись голосового...</span>
+                  <span className="text-xs text-muted-foreground">Запись...</span>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => stopRecording(false)} title="Отмена">
+                <button type="button" onClick={() => stopRecording(false)}
+                  className="w-10 h-10 flex items-center justify-center rounded-2xl bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0">
                   <X size={18} />
-                </Button>
-                <Button size="icon" onClick={() => stopRecording(true)} title="Отправить">
+                </button>
+                <button type="button" onClick={() => stopRecording(true)}
+                  className="w-10 h-10 flex items-center justify-center rounded-2xl bg-gradient-brand-short text-white shrink-0">
                   <Send size={16} />
-                </Button>
+                </button>
               </div>
             ) : (
-              <form onSubmit={handleSend} className="p-4 border-t flex gap-2 shrink-0 items-center">
+              <form onSubmit={handleSend} className="p-3 border-t flex gap-2 shrink-0 items-center">
                 <button type="button" onClick={() => fileInputRef.current?.click()}
-                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                  className="w-10 h-10 flex items-center justify-center rounded-2xl bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0">
                   <Paperclip size={18} />
                 </button>
                 <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect}
@@ -626,10 +628,13 @@ function ChatsPage() {
                   value={text}
                   onChange={e => setText(e.target.value)}
                   placeholder="Написать сообщение..."
-                  className="flex-1"
+                  className="flex-1 rounded-2xl bg-secondary border-0 focus-visible:ring-1 focus-visible:ring-primary/50"
                 />
                 {text.trim() ? (
-                  <Button type="submit" size="icon"><Send size={16} /></Button>
+                  <button type="submit"
+                    className="w-10 h-10 flex items-center justify-center rounded-2xl bg-gradient-brand-short text-white shrink-0">
+                    <Send size={16} />
+                  </button>
                 ) : (
                   <button
                     type="button"
@@ -637,10 +642,10 @@ function ChatsPage() {
                     onMouseUp={() => stopRecording(true)}
                     onTouchStart={startRecording}
                     onTouchEnd={() => stopRecording(true)}
-                    className="text-muted-foreground hover:text-primary transition-colors shrink-0"
+                    className="w-10 h-10 flex items-center justify-center rounded-2xl bg-secondary text-muted-foreground hover:text-primary transition-colors shrink-0"
                     title="Удерживайте для записи"
                   >
-                    <Mic size={20} />
+                    <Mic size={18} />
                   </button>
                 )}
               </form>
