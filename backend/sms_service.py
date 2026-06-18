@@ -14,6 +14,6 @@ async def send_sms_code(to_phone: str, code: str):
     async with httpx.AsyncClient() as client:
         await client.post(
             f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json",
-            data={"From": from_num, "To": to_phone, "Body": f"Ваш код верификации в Семейной сети: {code}"},
+            data={"From": from_num, "To": to_phone, "Body": f"Ваш код верификации в Kofka: {code}"},
             auth=(sid, token),
         )

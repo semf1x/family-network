@@ -41,6 +41,16 @@ async def startup():
         await conn.execute(text("ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_id INTEGER REFERENCES messages(id) ON DELETE SET NULL"))
         await conn.execute(text("ALTER TABLE posts ADD COLUMN IF NOT EXISTS title VARCHAR(200)"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS badge_verified BOOLEAN NOT NULL DEFAULT FALSE"))
+        await conn.execute(text("ALTER TABLE users ALTER COLUMN email DROP NOT NULL"))
+        await conn.execute(text("""
+            DO $$ BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'users_phone_unique'
+                ) THEN
+                    ALTER TABLE users ADD CONSTRAINT users_phone_unique UNIQUE (phone);
+                END IF;
+            END $$
+        """))
         await conn.execute(text("""
             CREATE TABLE IF NOT EXISTS calls (
                 id SERIAL PRIMARY KEY,

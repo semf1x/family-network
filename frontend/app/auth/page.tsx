@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "@/lib/api"
-import { Mail } from "lucide-react"
+import { Smartphone, CheckCircle2, XCircle, Loader2 } from "lucide-react"
 
 type Screen = "auth" | "verify"
 
@@ -19,13 +19,18 @@ export default function AuthPage() {
   useEffect(() => {
     if (localStorage.getItem("token")) router.replace("/chats")
   }, [router])
-  const [pendingEmail, setPendingEmail] = useState("")
+
+  const [pendingPhone, setPendingPhone] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const [loginData, setLoginData] = useState({ email: "", password: "" })
-  const [registerData, setRegisterData] = useState({ display_name: "", username: "", email: "", password: "" })
+  const [loginData, setLoginData] = useState({ phone: "", password: "" })
+  const [registerData, setRegisterData] = useState({ display_name: "", username: "", phone: "", password: "" })
+
+  // Username availability state
   const [usernameHint, setUsernameHint] = useState("")
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle")
+  const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // OTP state
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
@@ -38,11 +43,7 @@ export default function AuthPage() {
     setResendCooldown(60)
     intervalRef.current = setInterval(() => {
       setResendCooldown(c => {
-        if (c <= 1) {
-          clearInterval(intervalRef.current!)
-          intervalRef.current = null
-          return 0
-        }
+        if (c <= 1) { clearInterval(intervalRef.current!); intervalRef.current = null; return 0 }
         return c - 1
       })
     }, 1000)
@@ -51,15 +52,16 @@ export default function AuthPage() {
   function saveAndRedirect(res: { access_token: string; user: any }) {
     localStorage.setItem("token", res.access_token)
     localStorage.setItem("user", JSON.stringify(res.user))
-    router.push("/feed")
+    router.push("/chats")
   }
 
+  // ── Login ──────────────────────────────────────────────
   async function handleLogin(e: React.SyntheticEvent) {
     e.preventDefault()
     setError("")
     setLoading(true)
     try {
-      saveAndRedirect(await api.login(loginData))
+      saveAndRedirect(await api.login({ phone: loginData.phone, password: loginData.password }))
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -67,17 +69,34 @@ export default function AuthPage() {
     }
   }
 
+  // ── Username check ─────────────────────────────────────
   const USERNAME_RE = /^[a-z][a-z0-9_]{3,19}$/
 
   function handleUsernameInput(value: string) {
     const cleaned = value.toLowerCase().replace(/[^a-z0-9_]/g, "")
     setRegisterData(d => ({ ...d, username: cleaned }))
+    setUsernameStatus("idle")
+
     if (!cleaned) { setUsernameHint(""); return }
     if (cleaned.length < 4) { setUsernameHint("Минимум 4 символа"); return }
     if (!/^[a-z]/.test(cleaned)) { setUsernameHint("Должен начинаться с буквы"); return }
     setUsernameHint("")
+
+    if (!USERNAME_RE.test(cleaned)) return
+
+    if (usernameTimer.current) clearTimeout(usernameTimer.current)
+    setUsernameStatus("checking")
+    usernameTimer.current = setTimeout(async () => {
+      try {
+        const res = await api.checkUsernamePublic(cleaned)
+        setUsernameStatus(res.available ? "available" : "taken")
+      } catch {
+        setUsernameStatus("idle")
+      }
+    }, 500)
   }
 
+  // ── Register ───────────────────────────────────────────
   async function handleRegister(e: React.SyntheticEvent) {
     e.preventDefault()
     setError("")
@@ -85,15 +104,19 @@ export default function AuthPage() {
       setError("Username: 4-20 символов, строчные буквы, цифры и _")
       return
     }
+    if (usernameStatus === "taken") {
+      setError("Этот username уже занят")
+      return
+    }
     setLoading(true)
     try {
       await api.register({
         username: registerData.username,
         display_name: registerData.display_name.trim() || undefined,
-        email: registerData.email,
+        phone: registerData.phone,
         password: registerData.password,
       })
-      setPendingEmail(registerData.email)
+      setPendingPhone(registerData.phone)
       setScreen("verify")
       startCooldown()
       setTimeout(() => otpRefs.current[0]?.focus(), 100)
@@ -104,6 +127,7 @@ export default function AuthPage() {
     }
   }
 
+  // ── OTP input ──────────────────────────────────────────
   function handleOtpChange(index: number, value: string) {
     const digit = value.replace(/\D/g, "").slice(-1)
     const next = [...otp]
@@ -134,7 +158,7 @@ export default function AuthPage() {
     setError("")
     setLoading(true)
     try {
-      saveAndRedirect(await api.verifyEmail({ email: pendingEmail, code }))
+      saveAndRedirect(await api.verifyPhone({ phone: pendingPhone, code }))
     } catch (err: any) {
       setError(err.message)
       setOtp(["", "", "", "", "", ""])
@@ -147,7 +171,7 @@ export default function AuthPage() {
   async function handleResend() {
     if (resendCooldown > 0) return
     try {
-      await api.resendCode(pendingEmail)
+      await api.resendCode(pendingPhone)
       startCooldown()
       setOtp(["", "", "", "", "", ""])
       otpRefs.current[0]?.focus()
@@ -156,6 +180,7 @@ export default function AuthPage() {
     }
   }
 
+  // ── Verify screen ──────────────────────────────────────
   if (screen === "verify") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -171,12 +196,12 @@ export default function AuthPage() {
           <Card>
             <CardHeader className="text-center">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <Mail className="h-6 w-6 text-primary" />
+                <Smartphone className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Проверьте почту</CardTitle>
+              <CardTitle>Введите код из SMS</CardTitle>
               <CardDescription>
                 Мы отправили 6-значный код на<br />
-                <span className="font-medium text-foreground">{pendingEmail}</span>
+                <span className="font-medium text-foreground">{pendingPhone}</span>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -193,7 +218,7 @@ export default function AuthPage() {
                       onChange={e => handleOtpChange(i, e.target.value)}
                       onKeyDown={e => handleOtpKeyDown(i, e)}
                       onPaste={i === 0 ? handleOtpPaste : undefined}
-                      className="h-12 w-10 rounded-lg border border-input bg-background text-center text-xl font-bold
+                      className="h-12 w-10 rounded-xl border border-input bg-secondary text-center text-xl font-bold
                                  focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
                                  transition-all"
                     />
@@ -202,9 +227,14 @@ export default function AuthPage() {
 
                 {error && <p className="text-destructive text-sm text-center">{error}</p>}
 
-                <Button type="submit" className="w-full" disabled={loading || otp.join("").length < 6}>
+                <button
+                  type="submit"
+                  disabled={loading || otp.join("").length < 6}
+                  className="w-full h-11 rounded-2xl bg-gradient-brand-short text-white font-medium
+                             disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                >
                   {loading ? "Проверяем..." : "Подтвердить"}
-                </Button>
+                </button>
 
                 <p className="text-center text-sm text-muted-foreground">
                   Не пришёл код?{" "}
@@ -220,6 +250,14 @@ export default function AuthPage() {
                     </button>
                   )}
                 </p>
+
+                <button
+                  type="button"
+                  onClick={() => { setScreen("auth"); setOtp(["", "", "", "", "", ""]); setError("") }}
+                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ← Назад
+                </button>
               </form>
             </CardContent>
           </Card>
@@ -228,6 +266,7 @@ export default function AuthPage() {
     )
   }
 
+  // ── Auth screen ────────────────────────────────────────
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
@@ -239,28 +278,29 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="login" onValueChange={() => setError("")}>
+        <Tabs defaultValue="login" onValueChange={() => { setError(""); setUsernameStatus("idle") }}>
           <TabsList className="w-full">
             <TabsTrigger value="login" className="flex-1">Войти</TabsTrigger>
-            <TabsTrigger value="register" className="flex-1">Зарегистрироваться</TabsTrigger>
+            <TabsTrigger value="register" className="flex-1">Регистрация</TabsTrigger>
           </TabsList>
 
+          {/* ── LOGIN ── */}
           <TabsContent value="login">
             <Card>
               <CardHeader>
                 <CardTitle>Добро пожаловать</CardTitle>
-                <CardDescription>Введите свои данные для входа</CardDescription>
+                <CardDescription>Войдите по номеру телефона</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="login-phone">Номер телефона</Label>
                     <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={loginData.email}
-                      onChange={e => setLoginData({ ...loginData, email: e.target.value })}
+                      id="login-phone"
+                      type="tel"
+                      placeholder="+7 999 123-45-67"
+                      value={loginData.phone}
+                      onChange={e => setLoginData({ ...loginData, phone: e.target.value })}
                       required
                     />
                   </div>
@@ -276,14 +316,20 @@ export default function AuthPage() {
                     />
                   </div>
                   {error && <p className="text-destructive text-sm">{error}</p>}
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-11 rounded-2xl bg-gradient-brand-short text-white font-medium
+                               disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     {loading ? "Входим..." : "Войти"}
-                  </Button>
+                  </button>
                 </form>
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* ── REGISTER ── */}
           <TabsContent value="register">
             <Card>
               <CardHeader>
@@ -301,6 +347,7 @@ export default function AuthPage() {
                       onChange={e => setRegisterData({ ...registerData, display_name: e.target.value })}
                     />
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="reg-username">Username</Label>
                     <div className="relative">
@@ -308,44 +355,63 @@ export default function AuthPage() {
                       <Input
                         id="reg-username"
                         placeholder="ivan_petrov"
-                        className="pl-7"
+                        className="pl-7 pr-9"
                         value={registerData.username}
                         onChange={e => handleUsernameInput(e.target.value)}
                         maxLength={20}
                         required
                       />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {usernameStatus === "checking" && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
+                        {usernameStatus === "available" && <CheckCircle2 size={14} className="text-green-500" />}
+                        {usernameStatus === "taken" && <XCircle size={14} className="text-destructive" />}
+                      </span>
                     </div>
                     {usernameHint
                       ? <p className="text-xs text-amber-500">{usernameHint}</p>
-                      : <p className="text-xs text-muted-foreground">4-20 символов, буквы, цифры и _</p>
+                      : usernameStatus === "available"
+                        ? <p className="text-xs text-green-500">Username свободен</p>
+                        : usernameStatus === "taken"
+                          ? <p className="text-xs text-destructive">Username уже занят</p>
+                          : <p className="text-xs text-muted-foreground">4-20 символов, буквы, цифры и _</p>
                     }
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="reg-email">Email</Label>
+                    <Label htmlFor="reg-phone">Номер телефона</Label>
                     <Input
-                      id="reg-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={registerData.email}
-                      onChange={e => setRegisterData({ ...registerData, email: e.target.value })}
+                      id="reg-phone"
+                      type="tel"
+                      placeholder="+7 999 123-45-67"
+                      value={registerData.phone}
+                      onChange={e => setRegisterData({ ...registerData, phone: e.target.value })}
                       required
                     />
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="reg-password">Пароль</Label>
                     <Input
                       id="reg-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Минимум 6 символов"
                       value={registerData.password}
                       onChange={e => setRegisterData({ ...registerData, password: e.target.value })}
+                      minLength={6}
                       required
                     />
                   </div>
+
                   {error && <p className="text-destructive text-sm">{error}</p>}
-                  <Button type="submit" className="w-full" disabled={loading}>
+
+                  <button
+                    type="submit"
+                    disabled={loading || usernameStatus === "taken" || usernameStatus === "checking"}
+                    className="w-full h-11 rounded-2xl bg-gradient-brand-short text-white font-medium
+                               disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     {loading ? "Создаём..." : "Зарегистрироваться"}
-                  </Button>
+                  </button>
                 </form>
               </CardContent>
             </Card>

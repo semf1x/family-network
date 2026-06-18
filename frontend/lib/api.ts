@@ -38,17 +38,20 @@ async function upload(path: string, file: File) {
 }
 
 export const api = {
-  register: (data: { username: string; display_name?: string; email: string; password: string }) =>
+  register: (data: { username: string; display_name?: string; phone: string; password: string }) =>
     request("/auth/register", { method: "POST", body: JSON.stringify(data) }),
 
-  verifyEmail: (data: { email: string; code: string }) =>
+  verifyPhone: (data: { phone: string; code: string }) =>
     request("/auth/verify", { method: "POST", body: JSON.stringify(data) }),
 
-  resendCode: (email: string) =>
-    request("/auth/resend-code", { method: "POST", body: JSON.stringify({ email }) }),
+  resendCode: (phone: string) =>
+    request("/auth/resend-code", { method: "POST", body: JSON.stringify({ phone }) }),
 
-  login: (data: { email: string; password: string }) =>
+  login: (data: { phone: string; password: string }) =>
     request("/auth/login", { method: "POST", body: JSON.stringify(data) }),
+
+  checkUsernamePublic: (username: string) =>
+    request(`/auth/check-username?username=${encodeURIComponent(username)}`),
 
   me: () => request("/users/me"),
 

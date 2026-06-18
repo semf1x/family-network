@@ -10,11 +10,11 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(20), unique=True, nullable=False)   # @handle
     display_name = Column(String(100), nullable=True)            # Имя пользователя
-    email = Column(String(255), unique=True, nullable=False)
+    email = Column(String(255), unique=True, nullable=True)
     password_hash = Column(String(255), nullable=False)
     avatar_url = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
-    phone = Column(String(20), nullable=True)
+    phone = Column(String(20), unique=True, nullable=True)
     phone_verified = Column(Boolean, default=False, nullable=False)
     show_phone = Column(Boolean, default=False, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
