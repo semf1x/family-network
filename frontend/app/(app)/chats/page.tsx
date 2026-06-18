@@ -9,7 +9,7 @@ import { addWSHandler } from "@/lib/ws"
 import VerifiedBadge from "@/components/VerifiedBadge"
 import {
   Send, SquarePen, X, Search, Paperclip, FileIcon,
-  Mic, Play, Pause, Check, CheckCheck, CornerUpLeft, Phone, ArrowLeft,
+  Mic, Play, Pause, Check, CheckCheck, CornerUpLeft, Phone, ArrowLeft, Loader2,
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 
@@ -376,31 +376,36 @@ function ChatsPage() {
         </div>
 
         {showSearch && (
-          <div className="p-3 border-b">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Найти пользователя..." className="pl-8 h-8 text-sm" />
+          <div className="p-3 border-b space-y-2">
+            <div className="flex items-center gap-2 rounded-2xl px-3 h-10"
+                 style={{ background: "rgba(10,10,14,0.7)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <Search size={14} className="text-white/30 shrink-0" />
+              <input
+                autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Найти пользователя..."
+                className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+              />
+              {searching && <Loader2 size={13} className="animate-spin text-white/30 shrink-0" />}
             </div>
             {searchResults.length > 0 && (
-              <div className="mt-2 space-y-0.5">
+              <div className="space-y-0.5">
                 {searchResults.map(u => (
                   <button key={u.id} onClick={() => openChat(u)}
-                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-accent transition-colors text-left">
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary transition-colors text-left">
                     <Avatar className="h-8 w-8 shrink-0">
                       <AvatarImage src={avatarUrl(u.avatar_url)} />
-                      <AvatarFallback>{(u.display_name || u.username)?.[0]?.toUpperCase()}</AvatarFallback>
+                      <AvatarFallback className="text-xs">{(u.display_name || u.username)?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{u.display_name || u.username}</p>
-                      <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
+                      <p className="text-xs text-white/30 truncate">@{u.username}</p>
                     </div>
                   </button>
                 ))}
               </div>
             )}
             {searchQuery.trim() && !searching && searchResults.length === 0 && (
-              <p className="text-xs text-muted-foreground mt-2 px-2">Никого не найдено</p>
+              <p className="text-xs text-white/30 px-3 py-1">Никого не найдено</p>
             )}
           </div>
         )}
