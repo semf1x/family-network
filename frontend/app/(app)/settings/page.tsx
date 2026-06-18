@@ -124,7 +124,7 @@ export default function SettingsPage() {
     setPhoneMsg({ ok: "", err: "" })
     setPhoneLoading(true)
     try {
-      const updated = await api.verifyPhone(phoneCode)
+      const updated = await api.verifyPhoneNumber(phoneCode)
       applyUserUpdate(updated)
       setUser(updated)
       setPhoneStep("input")

@@ -69,7 +69,7 @@ export const api = {
   requestPhoneVerify: (phone: string) =>
     request("/users/me/phone", { method: "POST", body: JSON.stringify({ phone }) }),
 
-  verifyPhone: (code: string) =>
+  verifyPhoneNumber: (code: string) =>
     request("/users/me/phone/verify", { method: "POST", body: JSON.stringify({ code }) }),
 
   updatePrivacy: (data: { show_phone?: boolean }) =>
