@@ -146,32 +146,6 @@ export default function AuthPage() {
     } catch (err: any) { setError(err.message) }
   }
 
-  // ── Shared layout wrapper ──────────────────────────────
-  function Layout({ children }: { children: React.ReactNode }) {
-    return (
-      <div className="auth-bg min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-[380px] space-y-6">
-          {/* Logo */}
-          <div className="flex items-center gap-3 px-1">
-            <img src="/kofka-icon.svg" alt="Kofka" className="h-10 w-auto" />
-            <div>
-              <h1 className="font-kofka text-2xl font-bold leading-none tracking-wide"
-                  style={{ background: "linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                Kofka
-              </h1>
-              <p className="text-[10px] text-white/30 tracking-[0.18em] uppercase mt-0.5">Social Network</p>
-            </div>
-          </div>
-
-          {/* Card */}
-          <div className="auth-card rounded-[28px] p-7">
-            {children}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   // ── Verify screen ──────────────────────────────────────
   if (screen === "verify") {
     return (
@@ -380,6 +354,28 @@ export default function AuthPage() {
 }
 
 // ── Sub-components ─────────────────────────────────────
+
+function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="auth-bg min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-[380px] space-y-6">
+        <div className="flex items-center gap-3 px-1">
+          <img src="/kofka-icon.svg" alt="Kofka" className="h-10 w-auto" />
+          <div>
+            <h1 className="font-kofka text-2xl font-bold leading-none tracking-wide"
+                style={{ background: "linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              Kofka
+            </h1>
+            <p className="text-[10px] text-white/30 tracking-[0.18em] uppercase mt-0.5">Social Network</p>
+          </div>
+        </div>
+        <div className="auth-card rounded-[28px] p-7">
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function Field({
   label, children, suffix, hint,
