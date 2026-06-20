@@ -57,9 +57,10 @@ export default function AuthPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError("")
+    if (loginData.phone.length < 10) { setError("Введите полный номер телефона (10 цифр)"); return }
     setLoading(true)
     try {
-      saveAndRedirect(await api.login({ phone: loginData.phone, password: loginData.password }))
+      saveAndRedirect(await api.login({ phone: "+7" + loginData.phone, password: loginData.password }))
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -87,15 +88,17 @@ export default function AuthPage() {
     setError("")
     if (!USERNAME_RE.test(registerData.username)) { setError("Username: 4-20 символов, строчные буквы и _"); return }
     if (usernameStatus === "taken") { setError("Этот username уже занят"); return }
+    if (registerData.phone.length < 10) { setError("Введите полный номер телефона (10 цифр)"); return }
     setLoading(true)
+    const fullPhone = "+7" + registerData.phone
     try {
       await api.register({
         username: registerData.username,
         display_name: registerData.display_name.trim() || undefined,
-        phone: registerData.phone,
+        phone: fullPhone,
         password: registerData.password,
       })
-      setPendingPhone(registerData.phone)
+      setPendingPhone(fullPhone)
       setScreen("verify")
       startCooldown()
       setTimeout(() => otpRefs.current[0]?.focus(), 100)
@@ -253,16 +256,10 @@ export default function AuthPage() {
         {/* Forms */}
         {tab === "login" ? (
           <form onSubmit={handleLogin} className="space-y-4">
-            <Field label="Номер телефона">
-              <input
-                type="tel"
-                placeholder="+7 999 123-45-67"
-                value={loginData.phone}
-                onChange={e => setLoginData({ ...loginData, phone: e.target.value })}
-                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
-                required
-              />
-            </Field>
+            <PhoneField
+              digits={loginData.phone}
+              onChange={d => setLoginData({ ...loginData, phone: d })}
+            />
 
             <Field label="Пароль">
               <input
@@ -318,16 +315,10 @@ export default function AuthPage() {
               </div>
             </Field>
 
-            <Field label="Номер телефона">
-              <input
-                type="tel"
-                placeholder="+7 999 123-45-67"
-                value={registerData.phone}
-                onChange={e => setRegisterData({ ...registerData, phone: e.target.value })}
-                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-white/25"
-                required
-              />
-            </Field>
+            <PhoneField
+              digits={registerData.phone}
+              onChange={d => setRegisterData({ ...registerData, phone: d })}
+            />
 
             <Field label="Пароль">
               <input
@@ -354,6 +345,37 @@ export default function AuthPage() {
 }
 
 // ── Sub-components ─────────────────────────────────────
+
+function fmtPhoneDisplay(digits: string) {
+  const d = digits.slice(0, 10)
+  if (d.length <= 3) return d
+  if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`
+  if (d.length <= 8) return `${d.slice(0, 3)} ${d.slice(3, 6)}-${d.slice(6)}`
+  return `${d.slice(0, 3)} ${d.slice(3, 6)}-${d.slice(6, 8)}-${d.slice(8)}`
+}
+
+function PhoneField({ digits, onChange }: { digits: string; onChange: (d: string) => void }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-semibold text-white/35 uppercase tracking-[0.1em]">
+        Номер телефона
+      </label>
+      <div className="auth-input-wrap h-12 rounded-2xl px-4 flex items-center gap-2.5">
+        <span className="text-base leading-none shrink-0 select-none">🇷🇺</span>
+        <span className="text-sm text-white/60 font-medium shrink-0 select-none">+7</span>
+        <div className="w-px h-4 bg-white/15 shrink-0" />
+        <input
+          type="tel"
+          inputMode="numeric"
+          placeholder="900 000-00-00"
+          value={fmtPhoneDisplay(digits)}
+          onChange={e => onChange(e.target.value.replace(/\D/g, "").slice(0, 10))}
+          className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/25"
+        />
+      </div>
+    </div>
+  )
+}
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (

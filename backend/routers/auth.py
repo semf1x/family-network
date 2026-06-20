@@ -16,6 +16,18 @@ import re
 USERNAME_RE = re.compile(r"^[a-z][a-z0-9_]{3,19}$")
 PHONE_RE = re.compile(r"^\+?[0-9]{10,15}$")
 
+
+def normalize_phone(raw: str) -> str:
+    """Normalize to +7XXXXXXXXXX for Russian numbers."""
+    digits = re.sub(r"\D", "", raw.strip())
+    # 8-XXX-XXX-XX-XX → 7XXXXXXXXXX
+    if len(digits) == 11 and digits.startswith("8"):
+        digits = "7" + digits[1:]
+    # 10 digits with no country code → assume +7
+    if len(digits) == 10:
+        digits = "7" + digits
+    return "+" + digits
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 bearer = HTTPBearer()
 
@@ -57,7 +69,7 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
             detail="Username: 4-20 символов, только строчные буквы, цифры и _, начинается с буквы"
         )
 
-    phone = re.sub(r"[\s\-\(\)]", "", data.phone.strip())
+    phone = normalize_phone(data.phone)
     if not PHONE_RE.match(phone):
         raise HTTPException(status_code=400, detail="Некорректный номер телефона")
 
@@ -101,7 +113,7 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
 
 @router.post("/verify", response_model=Token)
 async def verify_phone(data: PhoneVerifyRequest, db: AsyncSession = Depends(get_db)):
-    phone = re.sub(r"[\s\-\(\)]", "", data.phone.strip())
+    phone = normalize_phone(data.phone)
     stored = await redis_client.get(f"phone_auth:{phone}")
     if not stored or stored.decode() != data.code:
         raise HTTPException(status_code=400, detail="Неверный или устаревший код")
@@ -122,7 +134,7 @@ async def verify_phone(data: PhoneVerifyRequest, db: AsyncSession = Depends(get_
 
 @router.post("/resend-code")
 async def resend_code(data: ResendCodeRequest, db: AsyncSession = Depends(get_db)):
-    phone = re.sub(r"[\s\-\(\)]", "", data.phone.strip())
+    phone = normalize_phone(data.phone)
     result = await db.execute(select(User).where(User.phone == phone))
     user = result.scalar_one_or_none()
     if not user:
@@ -139,7 +151,7 @@ async def resend_code(data: ResendCodeRequest, db: AsyncSession = Depends(get_db
 
 @router.post("/login", response_model=Token)
 async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
-    phone = re.sub(r"[\s\-\(\)]", "", data.phone.strip())
+    phone = normalize_phone(data.phone)
     result = await db.execute(select(User).where(User.phone == phone))
     user = result.scalar_one_or_none()
 

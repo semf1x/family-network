@@ -42,6 +42,17 @@ async def startup():
         await conn.execute(text("ALTER TABLE posts ADD COLUMN IF NOT EXISTS title VARCHAR(200)"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS badge_verified BOOLEAN NOT NULL DEFAULT FALSE"))
         await conn.execute(text("ALTER TABLE users ALTER COLUMN email DROP NOT NULL"))
+        # Normalize existing phone numbers to +7XXXXXXXXXX
+        await conn.execute(text("""
+            UPDATE users SET phone =
+                CASE
+                    WHEN phone ~ '^[0-9]{10}$'  THEN '+7' || phone
+                    WHEN phone ~ '^7[0-9]{10}$' THEN '+' || phone
+                    WHEN phone ~ '^8[0-9]{10}$' THEN '+7' || substring(phone from 2)
+                    ELSE phone
+                END
+            WHERE phone IS NOT NULL AND phone NOT LIKE '+%'
+        """))
         await conn.execute(text("""
             DO $$ BEGIN
                 IF NOT EXISTS (

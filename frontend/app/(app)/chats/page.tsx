@@ -15,6 +15,23 @@ import { useRouter, useSearchParams } from "next/navigation"
 
 const BASE = BASE_URL
 
+// Module-level caches — survive route switches within the session
+const msgsCache = new Map<number, any[]>()
+const CONVS_KEY = "convs_cache"
+const CONVS_TTL = 60_000
+
+function loadConvsCache(): any[] | null {
+  try {
+    const raw = localStorage.getItem(CONVS_KEY)
+    if (!raw) return null
+    const { data, ts } = JSON.parse(raw)
+    return Date.now() - ts < CONVS_TTL ? data : null
+  } catch { return null }
+}
+function saveConvsCache(data: any[]) {
+  try { localStorage.setItem(CONVS_KEY, JSON.stringify({ data, ts: Date.now() })) } catch {}
+}
+
 function avatarUrl(url?: string) {
   return url ? `${BASE}${url}` : undefined
 }
@@ -212,12 +229,20 @@ function ChatsPage() {
 
   function updateConversations(convs: any[]) {
     setConversations(convs)
+    saveConvsCache(convs)
     const unread = convs.filter(c => c.unread_count > 0).length
     window.dispatchEvent(new CustomEvent("unread-count", { detail: unread }))
   }
 
   // Загрузка диалогов + подписка на WS сообщения
   useEffect(() => {
+    // Show cached conversations immediately (zero delay)
+    const cached = loadConvsCache()
+    if (cached) {
+      setConversations(cached)
+      const unread = cached.filter((c: any) => c.unread_count > 0).length
+      window.dispatchEvent(new CustomEvent("unread-count", { detail: unread }))
+    }
     api.getConversations().then(updateConversations)
 
     const remove = addWSHandler((data) => {
@@ -229,7 +254,11 @@ function ChatsPage() {
       const activeU = activeUserRef.current
       if (activeU && data.from_id === activeU.id) {
         api.markAsRead(data.from_id).catch(() => {})
-        setMessages(prev => [...prev, { ...data, is_read: true }])
+        setMessages(prev => {
+          const next = [...prev, { ...data, is_read: true }]
+          msgsCache.set(data.from_id, next)
+          return next
+        })
       } else {
         setMessages(prev => [...prev, data])
       }
@@ -267,9 +296,16 @@ function ChatsPage() {
     setSearchQuery("")
     setSearchResults([])
     setReplyTo(null)
-    const msgs = await api.getMessages(user.id)
-    setMessages(msgs)
-    await api.markAsRead(user.id).catch(() => {})
+
+    // Show cached messages instantly, then refresh in background
+    const cached = msgsCache.get(user.id)
+    if (cached) setMessages(cached)
+
+    api.getMessages(user.id).then(msgs => {
+      msgsCache.set(user.id, msgs)
+      setMessages(msgs)
+    })
+    api.markAsRead(user.id).catch(() => {})
     setConversations(prev => prev.map(c =>
       c.user.id === user.id ? { ...c, unread_count: 0 } : c
     ))
@@ -300,7 +336,11 @@ function ChatsPage() {
     e.preventDefault()
     if (!text.trim() || !activeUser) return
     const msg = await api.sendMessage(activeUser.id, text.trim(), replyTo?.id)
-    setMessages(prev => [...prev, msg])
+    setMessages(prev => {
+      const next = [...prev, msg]
+      msgsCache.set(activeUser.id, next)
+      return next
+    })
     setText("")
     setReplyTo(null)
     updateConvPreview(activeUser, msg)
@@ -311,7 +351,11 @@ function ChatsPage() {
     if (!file || !activeUser) return
     e.target.value = ""
     const msg = await api.sendFile(activeUser.id, file, replyTo?.id)
-    setMessages(prev => [...prev, msg])
+    setMessages(prev => {
+      const next = [...prev, msg]
+      msgsCache.set(activeUser.id, next)
+      return next
+    })
     setReplyTo(null)
     updateConvPreview(activeUser, msg)
   }
